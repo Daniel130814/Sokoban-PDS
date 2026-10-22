@@ -1,7 +1,11 @@
 package sokoban.model;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import sokoban.model.enums.Direccion;
 
@@ -10,11 +14,17 @@ public class Nivel {
     private final Tablero tablero;
     private final Jugador jugador;
     private final List<Caja> cajas;
+    private final Map<Posicion, Cerrojo> cerrojos = new HashMap<>();
 
     public Nivel(Tablero tablero, Jugador jugador, List<Caja> cajas) {
+        this(tablero, jugador, cajas, List.of());
+    }
+
+    public Nivel(Tablero tablero, Jugador jugador, List<Caja> cajas, Collection<Cerrojo> cerrojos) {
         this.tablero = tablero;
         this.jugador = jugador;
-        this.cajas = List.copyOf(cajas);
+        this.cajas = new ArrayList<>(cajas);
+        cerrojos.forEach(cerrojo -> this.cerrojos.put(cerrojo.posicion(), cerrojo));
     }
 
     public Tablero tablero() {
@@ -34,7 +44,15 @@ public class Nivel {
     }
 
     public boolean estaResuelto() {
-        return cajas.stream().allMatch(caja -> tablero.celdaEn(caja.posicion()) == TipoCelda.DESTINO);
+        long cajasEnDestino = cajas.stream()
+                .filter(caja -> tablero.celdaEn(caja.posicion()) == TipoCelda.DESTINO)
+                .count();
+        return cajasEnDestino == tablero.cantidadDeDestinos();
+    }
+
+    /** Si se rompió una caja y quedan menos cajas que destinos, el nivel ya no puede resolverse. */
+    public boolean quedoIrresoluble() {
+        return cajas.size() < tablero.cantidadDeDestinos();
     }
 
     public boolean moverJugador(Direccion direccion) {
@@ -59,6 +77,13 @@ public class Nivel {
                 .posicionFinal(llegada, direccion, tablero, posicion -> cajaEn(posicion).isPresent());
         caja.irA(destino);
         caja.alSerEmpujada();
+        Cerrojo cerrojo = cerrojos.get(destino);
+        if (cerrojo != null) {
+            caja.alAsentarseEn(cerrojo);
+        }
+        if (caja.estaRota()) {
+            cajas.remove(caja);
+        }
         return true;
     }
 }

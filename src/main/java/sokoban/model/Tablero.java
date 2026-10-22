@@ -25,6 +25,24 @@ public class Tablero {
         return celdas[posicion.fila()][posicion.columna()];
     }
 
+    public int cantidadDeDestinos() {
+        int destinos = 0;
+        for (TipoCelda[] fila : celdas) {
+            for (TipoCelda celda : fila) {
+                if (celda == TipoCelda.DESTINO) {
+                    destinos++;
+                }
+            }
+        }
+        return destinos;
+    }
+
+    public void abrirMuro(Posicion posicion) {
+        if (contiene(posicion) && celdaEn(posicion) == TipoCelda.MURO_CERRADO) {
+            celdas[posicion.fila()][posicion.columna()] = TipoCelda.MURO_ABIERTO;
+        }
+    }
+
     public ReglaDeMovimiento reglaEn(Posicion posicion) {
         return celdaEn(posicion).reglaDeMovimiento();
     }

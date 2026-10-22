@@ -7,10 +7,14 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import sokoban.exception.NivelInvalidoException;
 import sokoban.model.Caja;
+import sokoban.model.Cerrojo;
 import sokoban.model.Jugador;
+import sokoban.model.Muro;
 import sokoban.model.Nivel;
 import sokoban.model.Posicion;
 import sokoban.model.Tablero;
@@ -40,44 +44,73 @@ public class CargadorDeNivel {
         if (lineas.isEmpty()) {
             throw new NivelInvalidoException("El nivel está vacío");
         }
-        int ancho = lineas.stream().mapToInt(String::length).max().orElse(0);
-        TipoCelda[][] celdas = new TipoCelda[lineas.size()][ancho];
-        List<Caja> cajas = new ArrayList<>();
-        Posicion inicioJugador = null;
-        int destinos = 0;
-
+        Lectura lectura = new Lectura(lineas);
         for (int fila = 0; fila < lineas.size(); fila++) {
-            Arrays.fill(celdas[fila], TipoCelda.PARED);
             String linea = lineas.get(fila);
             for (int columna = 0; columna < linea.length(); columna++) {
-                char simbolo = linea.charAt(columna);
-                Posicion posicion = new Posicion(fila, columna);
-                celdas[fila][columna] = fabrica.crearCelda(simbolo);
-                if (celdas[fila][columna] == TipoCelda.DESTINO) {
-                    destinos++;
-                }
-                fabrica.crearCaja(simbolo, posicion).ifPresent(cajas::add);
-                if (fabrica.esJugador(simbolo)) {
-                    if (inicioJugador != null) {
-                        throw new NivelInvalidoException("El nivel tiene más de un jugador (fila " + fila + ")");
-                    }
-                    inicioJugador = posicion;
-                }
+                leerCaracter(lectura, linea.charAt(columna), new Posicion(fila, columna));
             }
         }
+        validar(lectura);
 
-        validar(inicioJugador, cajas.size(), destinos);
-        return new Nivel(new Tablero(celdas), new Jugador(inicioJugador), cajas);
+        Tablero tablero = new Tablero(lectura.celdas);
+        conectarMuros(lectura, tablero);
+        return new Nivel(tablero, new Jugador(lectura.inicioJugador), lectura.cajas, lectura.cerrojos);
     }
 
-    private void validar(Posicion inicioJugador, int cantidadCajas, int cantidadDestinos) {
-        if (inicioJugador == null) {
+    private void leerCaracter(Lectura lectura, char simbolo, Posicion posicion) {
+        TipoCelda celda = fabrica.crearCelda(simbolo);
+        lectura.celdas[posicion.fila()][posicion.columna()] = celda;
+        if (celda == TipoCelda.DESTINO) {
+            lectura.destinos++;
+        }
+        fabrica.crearCaja(simbolo, posicion).ifPresent(lectura.cajas::add);
+        fabrica.idDeCerrojo(simbolo).ifPresent(id -> lectura.cerrojos.add(new Cerrojo(id, posicion)));
+        fabrica.idDeMuro(simbolo).ifPresent(id ->
+                lectura.murosPorId.computeIfAbsent(id, clave -> new ArrayList<>()).add(posicion));
+        if (fabrica.esJugador(simbolo)) {
+            if (lectura.inicioJugador != null) {
+                throw new NivelInvalidoException(
+                        "El nivel tiene más de un jugador (fila " + posicion.fila() + ")");
+            }
+            lectura.inicioJugador = posicion;
+        }
+    }
+
+    private void conectarMuros(Lectura lectura, Tablero tablero) {
+        for (Cerrojo cerrojo : lectura.cerrojos) {
+            for (Posicion posicionMuro : lectura.murosPorId.getOrDefault(cerrojo.id(), List.of())) {
+                cerrojo.agregarObservador(new Muro(tablero, posicionMuro));
+            }
+        }
+    }
+
+    private void validar(Lectura lectura) {
+        if (lectura.inicioJugador == null) {
             throw new NivelInvalidoException("El nivel no tiene jugador");
         }
-        if (cantidadCajas == 0 || cantidadCajas != cantidadDestinos) {
+        if (lectura.cajas.isEmpty() || lectura.cajas.size() != lectura.destinos) {
             throw new NivelInvalidoException(
-                    "Debe haber la misma cantidad de cajas y destinos (cajas: " + cantidadCajas
-                            + ", destinos: " + cantidadDestinos + ")");
+                    "Debe haber la misma cantidad de cajas y destinos (cajas: " + lectura.cajas.size()
+                            + ", destinos: " + lectura.destinos + ")");
+        }
+    }
+
+    /** Datos acumulados mientras se recorre el archivo. */
+    private static final class Lectura {
+        final TipoCelda[][] celdas;
+        final List<Caja> cajas = new ArrayList<>();
+        final List<Cerrojo> cerrojos = new ArrayList<>();
+        final Map<Integer, List<Posicion>> murosPorId = new HashMap<>();
+        Posicion inicioJugador;
+        int destinos;
+
+        Lectura(List<String> lineas) {
+            int ancho = lineas.stream().mapToInt(String::length).max().orElse(0);
+            celdas = new TipoCelda[lineas.size()][ancho];
+            for (TipoCelda[] fila : celdas) {
+                Arrays.fill(fila, TipoCelda.PARED);
+            }
         }
     }
 }

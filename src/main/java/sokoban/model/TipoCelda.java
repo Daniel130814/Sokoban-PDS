@@ -4,7 +4,10 @@ public enum TipoCelda {
     PARED(false, new MovimientoNormal()),
     PISO(true, new MovimientoNormal()),
     DESTINO(true, new MovimientoNormal()),
-    HIELO(true, new Deslizamiento());
+    HIELO(true, new Deslizamiento()),
+    CERROJO(true, new MovimientoNormal()),
+    MURO_CERRADO(false, new MovimientoNormal()),
+    MURO_ABIERTO(true, new MovimientoNormal());
 
     private final boolean transitable;
     private final ReglaDeMovimiento reglaDeMovimiento;

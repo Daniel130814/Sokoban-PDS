@@ -10,6 +10,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-004: Carga de niveles desde `.txt` con Simple Factory
 - DD-005: Estados de la partida con un enum (State GoF descartado por ahora)
 - DD-006: Terreno resbaladizo con Strategy
+- DD-007: Cajas frágil y llave; cerrojo y muros con Observer (State descartado)
 
 ---
 
@@ -300,6 +301,67 @@ Un terreno de arena que frena la caja a la mitad sería una nueva clase `ReglaDe
 
 ---
 
+## DD-007: Cajas frágil y llave; cerrojo y muros con Observer (State descartado)
+
+- **Fecha:** 2026-10-22
+- **Estado:** Propuesta
+- **Patrón / principio:** Observer (GoF) para cerrojo→muros; polimorfismo, OCP y LSP para las cajas; State evaluado y descartado para la frágil
+- **Requisito relacionado:** Cajas frágiles con resistencia; cajas llave que abren muros al colocarse sobre un cerrojo (requisito no confirmado)
+
+### 1. Problema y contexto
+Hay dos comportamientos nuevos. (1) La caja frágil pierde resistencia en cada empuje y se rompe al llegar a cero. (2) La caja llave, al quedar sobre su cerrojo, abre los muros asociados. `Nivel` debe seguir sin conocer tipos de caja concretos.
+
+Reglas provisorias para ambigüedades abiertas:
+- Resistencia inicial fija (`CajaFragil.RESISTENCIA_INICIAL = 3`), no definida por nivel. La caja se mueve en el empuje y, si llega a cero, desaparece del nivel (aunque haya quedado sobre un destino).
+- Si se rompe una caja, hay menos cajas que destinos y el nivel es **irresoluble**: `Nivel.quedoIrresoluble()` lo informa para que la interfaz ofrezca reiniciar. Por eso `estaResuelto()` pasó a significar "todos los destinos están cubiertos" (con cajas y destinos iguales al cargar, es lo mismo que antes).
+- Asociación por identificador numérico 1–9: caja llave `a`–`i`, cerrojo `1`–`9`, muro cerrado `A`–`I`; un cerrojo abre todos los muros de su mismo id. La caja frágil es `%`.
+- Un muro abierto **queda abierto**, aunque la llave salga del cerrojo (más simple y evita dejar al jugador dentro de un muro que se cierra). Esto interactúa con el undo y se resuelve en la Etapa 7 incluyendo las celdas del tablero en el memento.
+- Solo una caja llave con el mismo id activa el cerrojo; cualquier otra caja no.
+
+### 2. Alternativas consideradas
+Caja frágil:
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Entero `resistencia` en `CajaFragil` + polimorfismo | Mínimo y claro | Si aparecen estados con comportamiento, habrá que migrar | (elegida) |
+| State (intacta / dañada / rota) | Cada estado con su comportamiento | Hoy los tres estados solo difieren en un número; sin efectos propios | Sobreingeniería: se reevalúa si se agregan imagen/sonido/efecto por estado |
+
+Cerrojo y muros:
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Observer: `Cerrojo` (Subject) notifica a `Muro` (Observer) | `Nivel` no conoce a los muros; relación uno a muchos explícita; el mismo mecanismo servirá para avisar a la vista y al sonido (Etapa 8) | Más clases y wiring en el cargador | (elegida) |
+| `Nivel` guarda un mapa id→muros y los abre directamente | Menos clases | `Nivel` acumula otra responsabilidad y conoce el detalle de los muros | Menos extensible |
+| Mediator | Centraliza la coordinación | Más pesado que lo necesario | Observer alcanza |
+
+### 3. Decisión
+`Caja` ganó dos puntos de variación con comportamiento por defecto: `alAsentarseEn(Cerrojo)` y `estaRota()`. `CajaFragil` descuenta resistencia al ser empujada y se rompe en cero. `CajaLlave` activa el cerrojo si coincide el id. Después de cada empuje, `Nivel` le pide a la caja que reaccione sin preguntar su tipo. `Cerrojo` es el Subject (avisa una sola vez), `Muro` es el Observer que pide al `Tablero` abrir su celda, y `CargadorDeNivel` conecta cada cerrojo con los muros de su id.
+
+### 4. Principios que favorece
+- **OCP / LSP:** dos tipos de caja nuevos sin modificar el algoritmo de empuje; ambos respetan el contrato de `Caja`.
+- **Low Coupling:** el cerrojo no conoce a los muros concretos, solo a la interfaz `ObservadorDeCerrojo`.
+- **Polimorfismo (GRASP):** ni `instanceof` ni `switch` por tipo de caja en `Nivel`.
+
+### 5. Consecuencias y costos
+Aumentó la superficie: 7 clases/interfaces nuevas y el cargador se complicó (se extrajo un acumulador `Lectura`). `Tablero` dejó de ser inmutable: puede abrir muros, así que el Memento de la Etapa 7 deberá guardar celdas. `Caja` tiene ahora tres métodos "de gancho" y dos con implementación vacía o constante; es el precio de evitar el `instanceof`. Riesgo: niveles irresolubles por rotura; mitigación pendiente en la UI. Los símbolos `a`–`i`, `1`–`9`, `A`–`I` son arbitrarios y deberían confirmarse.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Subject | `Cerrojo` | Implementada |
+| Observer (interfaz) | `ObservadorDeCerrojo` | Implementada |
+| Observer concreto | `Muro` | Implementada |
+| Caja con resistencia | `CajaFragil` | Implementada |
+| Caja que activa cerrojos | `CajaLlave` | Implementada |
+| Estados de la caja frágil | — | No planificados |
+
+### 7. Cómo se extiende
+Una puerta de otro tipo (por ejemplo, un muro que se abre y suena) es un nuevo `ObservadorDeCerrojo`. Para que la vista oiga la apertura se registra como observador sin tocar `Cerrojo` ni `Nivel`.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Observer para abrir los muros, y no State para la caja frágil?
+**Respuesta breve:** El cerrojo avisa a cero, uno o varios muros sin conocerlos, y ese mismo mecanismo reutiliza la vista y el sonido. En cambio, la caja frágil solo cuenta resistencia: sus "estados" no tienen comportamiento propio, así que State sería sobreingeniería. Lo reevaluamos si cada estado necesita efectos distintos.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -308,6 +370,8 @@ Un terreno de arena que frena la caja a la mitad sería una nueva clase `ReglaDe
 - Formato del nivel `.txt` y cantidad de niveles.
 - Qué pasa al terminar el último nivel (hoy: pasa por `NIVEL_COMPLETADO` y luego `JUEGO_TERMINADO`).
 - Si las cajas llave y frágiles también deben terminar sobre destinos (hoy: todas las cajas).
+- Resistencia de la caja frágil: fija en 3 (¿o definida por nivel?) y qué pasa si el nivel queda irresoluble.
+- Si un muro se vuelve a cerrar cuando la llave sale del cerrojo (hoy: queda abierto) y cómo se asocian llaves, cerrojos y muros (hoy: id 1–9).
 
 ---
 
@@ -321,3 +385,4 @@ Un terreno de arena que frena la caja a la mitad sería una nueva clase `ReglaDe
 | DD-004 | Borrador de la entrada, fábrica, cargador, nivel de ejemplo y tests | completar |
 | DD-005 | Evaluación State vs. enum, `Partida`, `Nivel.estaResuelto()` y tests | completar |
 | DD-006 | Borrador de la entrada, estrategias de movimiento, hielo y tests | completar |
+| DD-007 | Borrador de la entrada, cajas frágil/llave, Observer cerrojo–muro, cargador y tests | completar |
