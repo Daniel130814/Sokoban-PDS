@@ -8,6 +8,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-002: Modelo base con responsabilidades únicas (SRP, Information Expert)
 - DD-003: Cajas polimórficas y `Nivel` como coordinador del empuje
 - DD-004: Carga de niveles desde `.txt` con Simple Factory
+- DD-005: Estados de la partida con un enum (State GoF descartado por ahora)
 
 ---
 
@@ -202,12 +203,61 @@ Para la caja frágil: nuevo carácter en `FabricaDeElementos.crearCaja` y su cla
 
 ---
 
+## DD-005: Estados de la partida con un enum (State GoF descartado por ahora)
+
+- **Fecha:** 2026-10-22
+- **Estado:** Propuesta
+- **Patrón / principio:** Sin patrón GoF (State evaluado y descartado); SRP; Information Expert
+- **Requisito relacionado:** Condición de victoria: todas las cajas en destinos, avanzando al siguiente nivel (requisito no confirmado)
+
+### 1. Problema y contexto
+Hay que detectar la victoria, pasar de nivel y terminar el juego. Esto requiere un estado de la partida (jugando, nivel completado, juego terminado) que cambie qué acciones se aceptan. Lo que cambia con frecuencia es incierto: hoy hay tres estados y dos acciones (mover, avanzar).
+
+Decisión provisoria sobre una ambigüedad abierta: al completar el último nivel la partida pasa por `NIVEL_COMPLETADO` (para poder mostrar el resumen) y recién al avanzar queda en `JUEGO_TERMINADO`.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Enum `EstadoPartida` + clase `Partida` | Mínimo código; un único campo, sin combinaciones de banderas; fácil de leer y probar | Si los estados ganan comportamiento propio, los `if` crecen | (elegida) |
+| State (GoF): una clase por estado con `mover` y `avanzar` | Elimina condicionales; cada estado tiene sus reglas y transiciones | Tres clases casi vacías hoy: sobreingeniería | Cada estado solo decide si acepta o ignora una acción |
+| Banderas booleanas (`completado`, `terminado`) | Triviales | Combinaciones inválidas posibles | Es justo lo que State/enum evitan |
+
+### 3. Decisión
+`Partida` guarda la lista de niveles, el índice actual y un `EstadoPartida`. `mover` ignora la acción si no se está jugando y pasa a `NIVEL_COMPLETADO` cuando `Nivel.estaResuelto()` da verdadero. `avanzarDeNivel` solo vale en `NIVEL_COMPLETADO` y lanza `IllegalStateException` si se usa mal (error de programación, no una tecla ignorable). `Nivel` es el experto en saber si está resuelto. No aplicamos State GoF porque ningún estado tiene hoy comportamiento propio más allá de aceptar o rechazar.
+
+### 4. Principios que favorece
+- **Information Expert:** `Nivel` sabe si sus cajas están en destinos; `Partida` sabe en qué nivel y estado está.
+- **SRP:** `Nivel` resuelve una jugada; `Partida` secuencia niveles.
+- **YAGNI / honestidad de diseño:** no se usa un patrón sin un problema que lo exija.
+
+### 5. Consecuencias y costos
+`Partida` tiene condicionales sobre el estado. Es aceptable con tres estados. **Cuándo reconsiderar:** si se agregan menú, pausa o pantallas con entrada y reglas propias por estado (Etapa 8), o si los condicionales se repiten en más de dos métodos, se migra a State. Los niveles que recibe `Partida` son objetos mutables ya cargados: reiniciar un nivel requerirá volver a cargarlo o usar el Memento (Etapa 7).
+
+### 6. Dónde está en el código
+| Rol | Clase | Estado |
+|---|---|---|
+| Valores de estado | `EstadoPartida` | Implementada |
+| Contexto / secuenciador | `Partida` | Implementada |
+| Detección de victoria | `Nivel.estaResuelto()` | Implementada |
+| Clases State (`EstadoJugando`, etc.) | — | No planificadas hasta que haga falta |
+
+### 7. Cómo se extiende
+Un estado nuevo (por ejemplo `PAUSADO`) es un valor más del enum y un chequeo en `mover`. Si hacen falta más de uno o dos, se extrae a State y se registra una decisión nueva que reemplaza a esta.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué no usaron el patrón State para los estados del juego?
+**Respuesta breve:** Cada estado solo decide si acepta o ignora una acción; no tienen reglas propias. Con un enum el código es más corto y igual de claro. Si el menú o la pausa agregan comportamiento por estado, migramos a State y lo documentamos.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
 - Reglas del undo (cuántos pasos, usos consecutivos, qué restaura).
 - Reglas del terreno resbaladizo, cajas frágiles y llave/cerrojo/muro.
 - Formato del nivel `.txt` y cantidad de niveles.
+- Qué pasa al terminar el último nivel (hoy: pasa por `NIVEL_COMPLETADO` y luego `JUEGO_TERMINADO`).
+- Si las cajas llave y frágiles también deben terminar sobre destinos (hoy: todas las cajas).
 
 ---
 
@@ -219,3 +269,4 @@ Para la caja frágil: nuevo carácter en `FabricaDeElementos.crearCaja` y su cla
 | DD-002 | Borrador de la entrada, código del modelo base y tests | completar |
 | DD-003 | Borrador de la entrada, código de cajas, `Nivel` y tests | completar |
 | DD-004 | Borrador de la entrada, fábrica, cargador, nivel de ejemplo y tests | completar |
+| DD-005 | Evaluación State vs. enum, `Partida`, `Nivel.estaResuelto()` y tests | completar |

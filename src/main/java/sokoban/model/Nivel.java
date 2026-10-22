@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import sokoban.model.enums.Direccion;
+import sokoban.model.enums.TipoCelda;
 
 public class Nivel {
 
@@ -31,6 +32,10 @@ public class Nivel {
 
     public Optional<Caja> cajaEn(Posicion posicion) {
         return cajas.stream().filter(caja -> caja.posicion().equals(posicion)).findFirst();
+    }
+
+    public boolean estaResuelto() {
+        return cajas.stream().allMatch(caja -> tablero.celdaEn(caja.posicion()) == TipoCelda.DESTINO);
     }
 
     public boolean moverJugador(Direccion direccion) {

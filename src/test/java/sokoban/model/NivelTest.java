@@ -78,6 +78,21 @@ class NivelTest {
     }
 
     @Test
+    void elNivelSeResuelveCuandoTodasLasCajasEstanEnDestinos() {
+        Tablero tablero = new Tablero(new TipoCelda[][] {
+                {PARED, PARED, PARED, PARED, PARED},
+                {PARED, PISO, PISO, TipoCelda.DESTINO, PARED},
+                {PARED, PARED, PARED, PARED, PARED}
+        });
+        Nivel nivel = new Nivel(tablero, new Jugador(new Posicion(1, 1)),
+                List.of(new CajaNormal(new Posicion(1, 2))));
+
+        assertFalse(nivel.estaResuelto());
+        nivel.moverJugador(Direccion.DERECHA);
+        assertTrue(nivel.estaResuelto());
+    }
+
+    @Test
     void elJugadorNoTiraDeLasCajas() {
         Caja caja = new CajaNormal(new Posicion(1, 2));
         Nivel nivel = nivel(new Posicion(1, 3), caja);
