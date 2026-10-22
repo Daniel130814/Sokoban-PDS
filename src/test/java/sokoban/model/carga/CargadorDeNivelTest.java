@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import sokoban.exception.NivelInvalidoException;
 import sokoban.model.Nivel;
 import sokoban.model.Posicion;
+import sokoban.model.TipoCelda;
 import sokoban.model.enums.Direccion;
-import sokoban.model.enums.TipoCelda;
 
 class CargadorDeNivelTest {
 
@@ -45,6 +45,13 @@ class CargadorDeNivelTest {
 
         Posicion cajaFinal = nivel.cajas().get(0).posicion();
         assertEquals(TipoCelda.DESTINO, nivel.tablero().celdaEn(cajaFinal));
+    }
+
+    @Test
+    void interpretaElHieloComoTerrenoResbaladizo() {
+        Nivel nivel = cargador.cargar(List.of("######", "#@$~.#", "######"));
+
+        assertEquals(TipoCelda.HIELO, nivel.tablero().celdaEn(new Posicion(1, 3)));
     }
 
     @Test

@@ -9,6 +9,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-003: Cajas polimórficas y `Nivel` como coordinador del empuje
 - DD-004: Carga de niveles desde `.txt` con Simple Factory
 - DD-005: Estados de la partida con un enum (State GoF descartado por ahora)
+- DD-006: Terreno resbaladizo con Strategy
 
 ---
 
@@ -250,6 +251,55 @@ Un estado nuevo (por ejemplo `PAUSADO`) es un valor más del enum y un chequeo e
 
 ---
 
+## DD-006: Terreno resbaladizo con Strategy
+
+- **Fecha:** 2026-10-22
+- **Estado:** Propuesta
+- **Patrón / principio:** Strategy (GoF); OCP; GRASP Protected Variations y Polymorphism
+- **Requisito relacionado:** Terreno resbaladizo: la caja se desliza hasta chocar o llegar a un espacio vacío (requisito no confirmado)
+
+### 1. Problema y contexto
+Dónde termina una caja empujada depende del terreno al que llega. Lo que varía es esa regla (normal, resbaladiza, y quizá otras); lo que debe quedar estable es el procedimiento de empuje de `Nivel`.
+
+Reglas provisorias para las ambigüedades abiertas: (a) la caja que llega a hielo sigue hasta chocar con pared u otra caja, o hasta entrar a una celda que no es hielo (piso o destino), donde se detiene; (b) el deslizamiento completo cuenta como un único empuje (`alSerEmpujada` se llama una vez); (c) solo las cajas resbalan, no el jugador.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Strategy: cada celda tiene una `ReglaDeMovimiento` (`MovimientoNormal`, `Deslizamiento`) | `Nivel` no pregunta por tipos; terreno nuevo = estrategia nueva | Una interfaz y dos clases pequeñas | (elegida) |
+| `if (celda.esResbaladiza())` en `Nivel` con bucle | Menos clases | Cada terreno nuevo (arena, cinta transportadora) agrega condicionales en `Nivel` | Viola OCP |
+| Polimorfismo directo en una jerarquía `Terreno` | Parecido a Strategy | Obliga a reemplazar el enum `TipoCelda` entero hoy | Es un cambio más grande sin beneficio extra |
+
+### 3. Decisión
+`ReglaDeMovimiento` es la estrategia: dada la celda de llegada, devuelve la posición final de la caja. `MovimientoNormal` devuelve la misma celda; `Deslizamiento` mira la siguiente: si está libre, delega en la regla de esa celda, y si no, se detiene. Cada valor de `TipoCelda` guarda su regla, así que el terreno elige la estrategia y `Nivel` solo la ejecuta (contexto). La recursión hace que el hielo se detenga solo al llegar a piso o destino sin ningún `if` por tipo.
+
+Esto cumple la promesa de DD-002 solo en parte: `TipoCelda` pasó de enum de datos a enum con comportamiento y se movió a `sokoban.model` para evitar un ciclo entre paquetes. No se creó una jerarquía `Terreno`; se reevalúa si los terrenos ganan estado propio.
+
+### 4. Principios que favorece
+- **OCP:** un terreno nuevo (por ejemplo, un empuje que mueve dos casillas) es una nueva regla y un valor del enum; `Nivel` no cambia.
+- **Protected Variations:** la variación (regla de movimiento) queda detrás de una interfaz estable.
+- **Polimorfismo (GRASP):** reemplaza los condicionales por tipo de terreno.
+
+### 5. Consecuencias y costos
+Más clases e indirección. `Deslizamiento` conoce a `Tablero` y usa un `Predicate` para saber si una celda está ocupada por una caja, lo que lo acopla a ambos. Las instancias de estrategia se crean una por constante del enum (son sin estado). Strategy vs. State: acá la estrategia la elige el contexto (el terreno) desde afuera, no cambia sola según el estado interno de la caja; por eso es Strategy y no State. Las cajas frágiles (Etapa 6) sí encajan mejor en State.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Strategy | `ReglaDeMovimiento` | Implementada |
+| ConcreteStrategy | `MovimientoNormal`, `Deslizamiento` | Implementada |
+| Context | `Nivel` (método `empujar`) | Implementada |
+| Selección de la estrategia | `TipoCelda` (campo `reglaDeMovimiento`) | Implementada |
+
+### 7. Cómo se extiende
+Un terreno de arena que frena la caja a la mitad sería una nueva clase `ReglaDeMovimiento`, un valor en `TipoCelda` y un carácter en `FabricaDeElementos`.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Strategy y no un `if` para el terreno resbaladizo?
+**Respuesta breve:** La regla de movimiento es lo que cambia con cada terreno. Con un `if` en `Nivel` cada terreno nuevo obligaría a modificarlo; con Strategy, `Nivel` solo ejecuta la regla de la celda y el terreno nuevo se agrega sin tocarlo. No es State porque la regla la elige el terreno desde afuera, no el estado interno de la caja.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -270,3 +320,4 @@ Un estado nuevo (por ejemplo `PAUSADO`) es un valor más del enum y un chequeo e
 | DD-003 | Borrador de la entrada, código de cajas, `Nivel` y tests | completar |
 | DD-004 | Borrador de la entrada, fábrica, cargador, nivel de ejemplo y tests | completar |
 | DD-005 | Evaluación State vs. enum, `Partida`, `Nivel.estaResuelto()` y tests | completar |
+| DD-006 | Borrador de la entrada, estrategias de movimiento, hielo y tests | completar |

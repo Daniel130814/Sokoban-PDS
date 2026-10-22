@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import sokoban.model.enums.Direccion;
-import sokoban.model.enums.TipoCelda;
 
 public class Nivel {
 
@@ -52,11 +51,13 @@ public class Nivel {
     }
 
     private boolean empujar(Caja caja, Direccion direccion) {
-        Posicion siguiente = caja.posicion().desplazar(direccion);
-        if (!tablero.esTransitable(siguiente) || cajaEn(siguiente).isPresent()) {
+        Posicion llegada = caja.posicion().desplazar(direccion);
+        if (!tablero.esTransitable(llegada) || cajaEn(llegada).isPresent()) {
             return false;
         }
-        caja.irA(siguiente);
+        Posicion destino = tablero.reglaEn(llegada)
+                .posicionFinal(llegada, direccion, tablero, posicion -> cajaEn(posicion).isPresent());
+        caja.irA(destino);
         caja.alSerEmpujada();
         return true;
     }

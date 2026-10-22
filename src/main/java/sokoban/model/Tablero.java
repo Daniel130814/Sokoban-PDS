@@ -1,7 +1,5 @@
 package sokoban.model;
 
-import sokoban.model.enums.TipoCelda;
-
 public class Tablero {
 
     private final TipoCelda[][] celdas;
@@ -25,6 +23,10 @@ public class Tablero {
 
     public TipoCelda celdaEn(Posicion posicion) {
         return celdas[posicion.fila()][posicion.columna()];
+    }
+
+    public ReglaDeMovimiento reglaEn(Posicion posicion) {
+        return celdaEn(posicion).reglaDeMovimiento();
     }
 
     public boolean esTransitable(Posicion posicion) {

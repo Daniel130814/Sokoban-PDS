@@ -14,7 +14,7 @@ import sokoban.model.Jugador;
 import sokoban.model.Nivel;
 import sokoban.model.Posicion;
 import sokoban.model.Tablero;
-import sokoban.model.enums.TipoCelda;
+import sokoban.model.TipoCelda;
 
 public class CargadorDeNivel {
 

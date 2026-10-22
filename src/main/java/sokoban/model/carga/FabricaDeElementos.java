@@ -5,12 +5,12 @@ import sokoban.exception.NivelInvalidoException;
 import sokoban.model.Caja;
 import sokoban.model.CajaNormal;
 import sokoban.model.Posicion;
-import sokoban.model.enums.TipoCelda;
+import sokoban.model.TipoCelda;
 
 /**
  * Simple Factory: único lugar que conoce la leyenda de caracteres de los archivos de nivel.
  * Leyenda: '#' pared, ' ' piso, '.' destino, '$' caja, '*' caja sobre destino,
- * '@' jugador, '+' jugador sobre destino.
+ * '@' jugador, '+' jugador sobre destino, '~' hielo (terreno resbaladizo).
  */
 public class FabricaDeElementos {
 
@@ -19,6 +19,7 @@ public class FabricaDeElementos {
             case '#' -> TipoCelda.PARED;
             case ' ', '$', '@' -> TipoCelda.PISO;
             case '.', '*', '+' -> TipoCelda.DESTINO;
+            case '~' -> TipoCelda.HIELO;
             default -> throw new NivelInvalidoException("Carácter desconocido en el nivel: '" + simbolo + "'");
         };
     }
