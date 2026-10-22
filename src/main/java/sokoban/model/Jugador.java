@@ -1,7 +1,5 @@
 package sokoban.model;
 
-import sokoban.model.enums.Direccion;
-
 public class Jugador {
 
     private Posicion posicion;
@@ -14,12 +12,7 @@ public class Jugador {
         return posicion;
     }
 
-    public boolean mover(Direccion direccion, Tablero tablero) {
-        Posicion destino = posicion.desplazar(direccion);
-        if (!tablero.esTransitable(destino)) {
-            return false;
-        }
-        posicion = destino;
-        return true;
+    void irA(Posicion nueva) {
+        this.posicion = nueva;
     }
 }

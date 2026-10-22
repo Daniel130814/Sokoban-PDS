@@ -6,6 +6,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 ## Índice
 - DD-001: Separación en capas (MVC) y herramienta de build (Maven)
 - DD-002: Modelo base con responsabilidades únicas (SRP, Information Expert)
+- DD-003: Cajas polimórficas y `Nivel` como coordinador del empuje
 
 ---
 
@@ -104,6 +105,52 @@ Para agregar un tipo de celda simple (por ejemplo, agua intransitable) basta un 
 
 ---
 
+## DD-003: Cajas polimórficas y `Nivel` como coordinador del empuje
+
+- **Fecha:** 2026-10-22
+- **Estado:** Propuesta
+- **Patrón / principio:** Polimorfismo (GRASP), OCP, LSP; GRASP Controller (de caso de uso) y Low Coupling
+- **Requisito relacionado:** Empujar cajas: una sola a la vez, sin tirar de ellas (requisito no confirmado). Tres tipos de caja (normal, frágil, llave)
+
+### 1. Problema y contexto
+El jugador empuja cajas y el enunciado (según la skill, sin confirmar) pide varios tipos de caja que reaccionan distinto al ser empujadas. Lo que va a cambiar es el comportamiento por tipo de caja; lo que debe quedar estable es la regla de empuje (destino libre, una sola caja, sin tirar).
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| `Caja` abstracta con `alSerEmpujada()` y subclases | Un tipo nuevo es una clase nueva; `Nivel` no cambia | Hoy hay una sola subclase, y el punto de variación está vacío | (elegida) |
+| Un enum `TipoCaja` y `switch` en `Nivel` | Menos clases | Cada tipo nuevo obliga a modificar `Nivel` (viola OCP) | Se vuelve inmantenible con 3 tipos y reglas propias |
+| Sin abstracción: una sola clase `Caja` hasta que haga falta | Mínimo código | Obliga a refactorizar `Nivel` en la Etapa 6 | Los tipos de caja son parte del alcance planificado |
+
+### 3. Decisión
+`Caja` es una clase abstracta que guarda su posición y define `alSerEmpujada()`. `CajaNormal` es la primera implementación y no hace nada extra. `Nivel` coordina la jugada (Controller de caso de uso): consulta al `Tablero` por las paredes, busca cajas, valida el empuje y llama a `alSerEmpujada()` sin conocer el tipo concreto. `Jugador` quedó sin lógica de movimiento (solo guarda su posición) porque ahora la regla depende también de las cajas, y no queremos que conozca otras entidades.
+
+### 4. Principios que favorece
+- **OCP:** una caja frágil o llave se agrega como subclase sin tocar `Nivel` (el test con una `Caja` anónima lo demuestra).
+- **LSP:** cualquier subclase puede usarse donde se espera una `Caja`; el contrato es "me empujan y reacciono".
+- **Polimorfismo (GRASP):** en lugar de `if (tipo == ...)`, cada tipo decide qué hacer.
+- **Low Coupling:** `Jugador` y `Caja` no se conocen entre sí; `Nivel` los relaciona.
+
+### 5. Consecuencias y costos
+`alSerEmpujada()` hoy es un método vacío en la única subclase: es una previsión, no una necesidad ya resuelta. La hipótesis se valida en la Etapa 6; si las cajas frágiles y llave no usaran ese punto, se debe reevaluar. `Caja.irA` y `Jugador.irA` son visibles solo dentro del paquete para que nadie fuera de `Nivel` mueva piezas saltándose las reglas. Se cambió el comportamiento de la Etapa 1: `Jugador.mover` se eliminó y sus pruebas pasaron a `NivelTest`.
+
+### 6. Dónde está en el código
+| Rol | Clase | Estado |
+|---|---|---|
+| Abstracción | `Caja` | Implementada |
+| Variante concreta | `CajaNormal` | Implementada |
+| Variantes futuras | `CajaFragil`, `CajaLlave` | Planificadas |
+| Coordinador de la jugada | `Nivel` | Implementada |
+
+### 7. Cómo se extiende
+Una caja frágil se agrega como `CajaFragil extends Caja` que descuente resistencia en `alSerEmpujada()`. `Nivel` no se modifica (aunque habrá que definir cómo se retira una caja rota; ver Etapa 6).
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Para qué una clase abstracta `Caja` si hoy solo existe `CajaNormal`?
+**Respuesta breve:** El enunciado pide tres tipos de caja que reaccionan distinto al ser empujadas. Con la abstracción, `Nivel` no cambia al sumar un tipo nuevo; sin ella tendríamos un `switch` creciendo en la clase central. Reconocemos que hoy es una previsión y la validamos en la Etapa 6.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -119,3 +166,4 @@ Para agregar un tipo de celda simple (por ejemplo, agua intransitable) basta un 
 |---|---|---|
 | DD-001 | Borrador de la entrada, estructura de paquetes y `pom.xml` | completar |
 | DD-002 | Borrador de la entrada, código del modelo base y tests | completar |
+| DD-003 | Borrador de la entrada, código de cajas, `Nivel` y tests | completar |
