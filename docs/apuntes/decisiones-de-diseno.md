@@ -5,6 +5,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 
 ## Índice
 - DD-001: Separación en capas (MVC) y herramienta de build (Maven)
+- DD-002: Modelo base con responsabilidades únicas (SRP, Information Expert)
 
 ---
 
@@ -58,6 +59,51 @@ Cambiar de Swing a otra interfaz solo requiere una nueva vista y su controlador;
 
 ---
 
+## DD-002: Modelo base con responsabilidades únicas (SRP, Information Expert)
+
+- **Fecha:** 2026-10-22
+- **Estado:** Propuesta
+- **Patrón / principio:** SRP; GRASP Information Expert; Low Coupling / High Cohesion (sin patrón GoF)
+- **Requisito relacionado:** Movimiento del jugador: no atraviesa paredes (requisito no confirmado)
+
+### 1. Problema y contexto
+Necesitamos un modelo mínimo para mover al jugador por un tablero con paredes, pisos y destinos, sin dibujar nada. Lo que va a cambiar después (cajas, terrenos resbaladizos, cerrojos) debe poder sumarse sin reescribir estas clases.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Clases chicas: `Posicion`, `Tablero`, `Jugador` + enums `Direccion` y `TipoCelda` | Cada una tiene una razón de cambio; se prueban sin GUI | Más archivos que una sola clase | (elegida) |
+| Una clase `Juego` con matriz de `char` y `if` por carácter | Rápida de escribir | Mezcla carga, reglas y estado; se rompe al agregar elementos | Viola SRP y dificulta los patrones siguientes |
+| Jerarquía de clases para cada celda (`Pared`, `Piso`, `Destino`) | Polimorfismo desde el inicio | Hoy solo hay un dato (¿es transitable?): sobreingeniería | Se reevalúa en la Etapa 5 (terrenos) |
+
+### 3. Decisión
+`Posicion` es un `record` inmutable que sabe calcular su vecina. `Tablero` conoce qué hay en cada celda y si se puede transitar (Information Expert). `Jugador` conoce su posición y decide si se mueve consultando al tablero. `Direccion` y `TipoCelda` son enums porque tienen un conjunto cerrado de valores. Usamos enums en lugar de clases por celda porque hoy no hay comportamiento que justifique polimorfismo; no se aplica ningún patrón GoF todavía.
+
+### 4. Principios que favorece
+- **SRP:** el tablero no se mueve, el jugador no conoce la matriz de celdas.
+- **Information Expert:** quien tiene el dato responde la pregunta (`Tablero.esTransitable`).
+- **Low Coupling:** `Jugador` solo depende de `Tablero` y `Posicion`; ninguna clase importa Swing (DD-001).
+
+### 5. Consecuencias y costos
+El `Tablero` copia la matriz recibida para que nadie la altere desde afuera. `TipoCelda` como enum deberá reemplazarse por una abstracción cuando los terrenos tengan comportamiento (resbaladizo); lo asumimos y se registrará como una decisión nueva.
+
+### 6. Dónde está en el código
+| Rol | Clase | Estado |
+|---|---|---|
+| Valor inmutable de coordenadas | `Posicion` | Implementada |
+| Experto en celdas | `Tablero` | Implementada |
+| Entidad móvil | `Jugador` | Implementada |
+| Valores cerrados | `Direccion`, `TipoCelda` | Implementada |
+
+### 7. Cómo se extiende
+Para agregar un tipo de celda simple (por ejemplo, agua intransitable) basta un valor nuevo en `TipoCelda`. Cuando una celda necesite comportamiento propio, se pasa a una interfaz (ver Etapa 5).
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué `TipoCelda` es un enum y no una jerarquía de clases?
+**Respuesta breve:** Hoy las celdas solo difieren en un dato (si se puede pisar). Una jerarquía sería sobreingeniería; cuando aparezca comportamiento propio, como el terreno resbaladizo, la reemplazamos por polimorfismo o Strategy.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -72,3 +118,4 @@ Cambiar de Swing a otra interfaz solo requiere una nueva vista y su controlador;
 | Entrada | Qué se hizo con apoyo de IA | Qué hizo y validó el equipo |
 |---|---|---|
 | DD-001 | Borrador de la entrada, estructura de paquetes y `pom.xml` | completar |
+| DD-002 | Borrador de la entrada, código del modelo base y tests | completar |

@@ -1,0 +1,47 @@
+package sokoban.model;
+
+import sokoban.model.enums.TipoCelda;
+
+public class Tablero {
+
+    private final TipoCelda[][] celdas;
+
+    public Tablero(TipoCelda[][] celdas) {
+        this.celdas = copiar(celdas);
+    }
+
+    public int alto() {
+        return celdas.length;
+    }
+
+    public int ancho() {
+        return celdas[0].length;
+    }
+
+    public boolean contiene(Posicion posicion) {
+        return posicion.fila() >= 0 && posicion.fila() < alto()
+                && posicion.columna() >= 0 && posicion.columna() < ancho();
+    }
+
+    public TipoCelda celdaEn(Posicion posicion) {
+        return celdas[posicion.fila()][posicion.columna()];
+    }
+
+    public boolean esTransitable(Posicion posicion) {
+        return contiene(posicion) && celdaEn(posicion).esTransitable();
+    }
+
+    private static TipoCelda[][] copiar(TipoCelda[][] origen) {
+        if (origen.length == 0 || origen[0].length == 0) {
+            throw new IllegalArgumentException("El tablero no puede estar vacío");
+        }
+        TipoCelda[][] copia = new TipoCelda[origen.length][];
+        for (int fila = 0; fila < origen.length; fila++) {
+            if (origen[fila].length != origen[0].length) {
+                throw new IllegalArgumentException("Todas las filas deben tener el mismo largo");
+            }
+            copia[fila] = origen[fila].clone();
+        }
+        return copia;
+    }
+}
