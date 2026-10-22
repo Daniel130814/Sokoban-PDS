@@ -17,6 +17,10 @@ public class Nivel {
         this.cajas = List.copyOf(cajas);
     }
 
+    public Tablero tablero() {
+        return tablero;
+    }
+
     public Jugador jugador() {
         return jugador;
     }

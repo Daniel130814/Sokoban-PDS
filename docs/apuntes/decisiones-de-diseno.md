@@ -7,6 +7,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-001: Separación en capas (MVC) y herramienta de build (Maven)
 - DD-002: Modelo base con responsabilidades únicas (SRP, Information Expert)
 - DD-003: Cajas polimórficas y `Nivel` como coordinador del empuje
+- DD-004: Carga de niveles desde `.txt` con Simple Factory
 
 ---
 
@@ -151,6 +152,56 @@ Una caja frágil se agrega como `CajaFragil extends Caja` que descuente resisten
 
 ---
 
+## DD-004: Carga de niveles desde `.txt` con Simple Factory
+
+- **Fecha:** 2026-10-22
+- **Estado:** Propuesta
+- **Patrón / principio:** Simple Factory (idioma, no es un patrón GoF); OCP; DIP por inyección; GRASP Creator y Pure Fabrication
+- **Requisito relacionado:** Niveles cargados desde archivos de texto, uno por nivel (requisito no confirmado)
+
+### 1. Problema y contexto
+Cada nivel es un archivo de texto con un carácter por elemento. El mapeo carácter→objeto cambia cada vez que se agrega un elemento (cajas frágiles, llave, muros...). Debe quedar estable el procedimiento de lectura y validación del archivo. El formato es libre (ambigüedad abierta), así que queda documentado acá.
+
+Leyenda adoptada de forma provisoria: `#` pared, ` ` piso, `.` destino, `$` caja, `*` caja sobre destino, `@` jugador, `+` jugador sobre destino. Las filas más cortas se completan con pared. Se rechaza: carácter desconocido, ningún jugador o más de uno, y cantidad de cajas distinta a la de destinos.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| `FabricaDeElementos` (Simple Factory) + `CargadorDeNivel` | La leyenda está en un solo lugar; el cargador no cambia al sumar un elemento | Una clase más; no es GoF | (elegida) |
+| `switch` de caracteres dentro del cargador | Menos clases | Mezcla leer/validar con conocer la leyenda; crece con cada elemento | Viola SRP y OCP |
+| Builder para armar el nivel por pasos | Útil con muchas variantes | Hoy el nivel se arma en un solo paso: sobreingeniería | Se reevalúa si crece la validación |
+| Factory Method (GoF, subclases del cargador deciden qué crear) | Permite variar la creación por herencia | No hay variantes de cargador | No hay problema que lo justifique |
+
+### 3. Decisión
+`FabricaDeElementos` traduce un carácter a una celda (`TipoCelda`), una caja opcional o la marca de jugador. `CargadorDeNivel` recorre las líneas, pide a la fábrica los objetos, valida y arma el `Nivel`. La fábrica se inyecta por constructor. Hoy no hay una interfaz de fábrica porque solo existe una implementación; se introducirá si aparece una segunda (por ejemplo, un formato de nivel distinto o temas, donde evaluaríamos Abstract Factory).
+
+### 4. Principios que favorece
+- **SRP:** una clase conoce la leyenda, otra lee y valida.
+- **OCP:** agregar `%` para caja frágil es tocar la fábrica, sin modificar el cargador (aunque la fábrica en sí sí se edita: el cambio queda localizado, no cerrado).
+- **DIP (parcial):** el cargador recibe su fábrica desde afuera; todavía depende de una clase concreta.
+- **GRASP Creator / Pure Fabrication:** la fábrica no existe en el dominio del juego; se crea para bajar el acoplamiento y concentrar la creación.
+
+### 5. Consecuencias y costos
+El `switch` de la fábrica crece con cada elemento: el patrón lo concentra, no lo elimina. Si crece mucho, se reemplaza por un registro carácter→creador. La validación de niveles imposibles (cajas atrapadas) no se hace; solo la estructural. Se agregó `Nivel.tablero()` porque los tests y luego la vista necesitan leer las celdas.
+
+### 6. Dónde está en el código
+| Rol | Clase | Estado |
+|---|---|---|
+| Fábrica (Simple Factory) | `FabricaDeElementos` | Implementada |
+| Cliente de la fábrica | `CargadorDeNivel` | Implementada |
+| Error de formato | `NivelInvalidoException` | Implementada |
+| Recurso de ejemplo | `levels/nivel1.txt` | Implementada |
+| Interfaz de fábrica | — | No planificada hasta tener una segunda implementación |
+
+### 7. Cómo se extiende
+Para la caja frágil: nuevo carácter en `FabricaDeElementos.crearCaja` y su clase `CajaFragil`; el cargador no cambia. Para otro nivel, un archivo nuevo en `src/main/resources/levels`.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué una Simple Factory y no Factory Method ni Builder?
+**Respuesta breve:** Necesitamos centralizar la traducción carácter→objeto, que es lo que más va a cambiar. Factory Method exige subclases que decidan qué crear y acá no hay variantes de cargador; Builder se justifica con construcciones en varios pasos y hoy el nivel se arma de una vez. Reconocemos que Simple Factory no es un patrón GoF.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -167,3 +218,4 @@ Una caja frágil se agrega como `CajaFragil extends Caja` que descuente resisten
 | DD-001 | Borrador de la entrada, estructura de paquetes y `pom.xml` | completar |
 | DD-002 | Borrador de la entrada, código del modelo base y tests | completar |
 | DD-003 | Borrador de la entrada, código de cajas, `Nivel` y tests | completar |
+| DD-004 | Borrador de la entrada, fábrica, cargador, nivel de ejemplo y tests | completar |
