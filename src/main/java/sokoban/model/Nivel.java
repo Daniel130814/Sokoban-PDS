@@ -9,12 +9,13 @@ import java.util.Map;
 import java.util.Optional;
 import sokoban.model.enums.Direccion;
 
-public class Nivel {
+public class Nivel implements ObservadorDeCerrojo {
 
     private final Tablero tablero;
     private final Jugador jugador;
     private final List<Caja> cajas;
     private final Map<Posicion, Cerrojo> cerrojos = new HashMap<>();
+    private final DifusorDeEventos observadores = new DifusorDeEventos();
     private int movimientos;
     private int empujes;
 
@@ -26,7 +27,19 @@ public class Nivel {
         this.tablero = tablero;
         this.jugador = jugador;
         this.cajas = new ArrayList<>(cajas);
-        cerrojos.forEach(cerrojo -> this.cerrojos.put(cerrojo.posicion(), cerrojo));
+        cerrojos.forEach(cerrojo -> {
+            this.cerrojos.put(cerrojo.posicion(), cerrojo);
+            cerrojo.agregarObservador(this);
+        });
+    }
+
+    public void agregarObservador(ObservadorDeJuego observador) {
+        observadores.agregar(observador);
+    }
+
+    @Override
+    public void alActivarseCerrojo(Cerrojo cerrojo) {
+        observadores.cerrojoActivado();
     }
 
     public Tablero tablero() {
@@ -83,6 +96,7 @@ public class Nivel {
         estado.cerrojosActivos().forEach(Cerrojo::restaurarActivo);
         movimientos = estado.movimientos();
         empujes = estado.empujes();
+        observadores.estadoRestaurado();
     }
 
     public boolean moverJugador(Direccion direccion) {
@@ -91,6 +105,7 @@ public class Nivel {
             return false;
         }
         Optional<Caja> enDestino = cajaEn(destino);
+        int cajasAntes = cajas.size();
         if (enDestino.isPresent() && !empujar(enDestino.get(), direccion)) {
             return false;
         }
@@ -98,7 +113,12 @@ public class Nivel {
         movimientos++;
         if (enDestino.isPresent()) {
             empujes++;
+            observadores.cajaEmpujada();
+            if (cajas.size() < cajasAntes) {
+                observadores.cajaSeRompio();
+            }
         }
+        observadores.jugadorSeMovio();
         return true;
     }
 

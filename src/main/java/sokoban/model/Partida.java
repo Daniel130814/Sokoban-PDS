@@ -8,6 +8,7 @@ public class Partida {
 
     private final List<Nivel> niveles;
     private int indiceActual;
+    private final DifusorDeEventos observadores = new DifusorDeEventos();
     private SesionDeNivel sesion;
     private EstadoPartida estado = EstadoPartida.JUGANDO;
 
@@ -16,7 +17,12 @@ public class Partida {
             throw new IllegalArgumentException("Una partida necesita al menos un nivel");
         }
         this.niveles = List.copyOf(niveles);
+        this.niveles.forEach(nivel -> nivel.agregarObservador(observadores));
         this.sesion = new SesionDeNivel(niveles.get(0));
+    }
+
+    public void agregarObservador(ObservadorDeJuego observador) {
+        observadores.agregar(observador);
     }
 
     public EstadoPartida estado() {
@@ -42,6 +48,7 @@ public class Partida {
         boolean seMovio = sesion.mover(direccion);
         if (seMovio && nivelActual().estaResuelto()) {
             estado = EstadoPartida.NIVEL_COMPLETADO;
+            observadores.nivelCompletado();
         }
         return seMovio;
     }
@@ -64,8 +71,10 @@ public class Partida {
             indiceActual++;
             sesion = new SesionDeNivel(niveles.get(indiceActual));
             estado = EstadoPartida.JUGANDO;
+            observadores.nivelCambiado();
         } else {
             estado = EstadoPartida.JUEGO_TERMINADO;
+            observadores.juegoTerminado();
         }
     }
 }

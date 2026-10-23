@@ -12,6 +12,8 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-006: Terreno resbaladizo con Strategy
 - DD-007: Cajas frágil y llave; cerrojo y muros con Observer (State descartado)
 - DD-008: Deshacer y reiniciar con Memento
+- DD-009: Vista, HUD y sonido con Observer; controlador sin Swing
+- DD-010: Imágenes compartidas con Flyweight
 
 ---
 
@@ -416,12 +418,105 @@ Guardar y cargar partida (funcionalidad adicional posible) se apoya en `EstadoNi
 
 ---
 
+## DD-009: Vista, HUD y sonido con Observer; controlador sin Swing
+
+- **Fecha:** 2026-10-23
+- **Estado:** Propuesta
+- **Patrón / principio:** Observer (GoF); MVC; GRASP Controller; DIP; Singleton evaluado y descartado
+- **Requisito relacionado:** Interfaz con HUD (nivel, movimientos, empujes, botones deshacer y reiniciar) y efectos de sonido; Swing (requisito no confirmado)
+
+### 1. Problema y contexto
+El tablero, el HUD y el sonido tienen que reaccionar cuando el modelo cambia (movimiento, empuje, rotura, cerrojo, undo, nivel completado), pero el modelo no puede depender de Swing ni de javax.sound (DD-001). Lo que cambia con frecuencia es qué se hace ante cada evento y cuántos interesados hay; lo estable son las reglas.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Observer: el modelo emite eventos concretos y los interesados se registran | El modelo no conoce a la vista; sumar un observador no toca el modelo; reutiliza el mecanismo ya usado en cerrojo→muro | Más clases; el orden de notificación importa | (elegida) |
+| El controlador actualiza la vista y el sonido después de cada acción | Sin patrón, simple | El controlador tiene que acordarse de avisar a todos; cualquier cambio de estado fuera de él (undo, reinicio) se pierde | Acopla el controlador con vista y sonido |
+| Vista que consulta al modelo con un temporizador | Sin eventos | Gasta ciclos y no distingue qué pasó (no sirve para el sonido) | No permite sonidos por evento |
+
+### 3. Decisión
+`ObservadorDeJuego` define ocho eventos concretos con implementación vacía por defecto (cada observador implementa solo los suyos). `Nivel` y `Partida` emiten por medio de `DifusorDeEventos`, que reparte a todos los observadores. `PanelDeTablero` y `PanelHud` se registran para repintar y actualizar contadores; `SonidosDelJuego` traduce eventos en efectos con un `ReproductorDeSonido` inyectado. `ControladorDeJuego` (GRASP Controller) recibe teclas y botones y llama al modelo; no importa Swing, y las teclas se asocian en `PanelDeTablero`. `Nivel` reutiliza el Observer del cerrojo: se registra como `ObservadorDeCerrojo` y lo convierte en el evento `cerrojoActivado`.
+
+Singleton: no se usa para el audio. El reproductor se crea una sola vez en `Main` y se inyecta, lo que evita el estado global y permite probar `SonidosDelJuego` con un reproductor falso.
+
+### 4. Principios que favorece
+- **MVC / Low Coupling:** el modelo no importa `javax.swing` ni `javax.sound`.
+- **OCP:** un observador nuevo (por ejemplo, estadísticas) se agrega sin modificar el modelo.
+- **DIP:** `SonidosDelJuego` depende de la interfaz `ReproductorDeSonido`, no de javax.sound.
+- **GRASP Controller:** un objeto recibe los eventos de la interfaz y los delega, sin lógica de juego propia.
+
+### 5. Consecuencias y costos
+Los eventos se emiten en el hilo que los provoca (el de Swing, al tocar una tecla); si algún día hubiera hilos, habría que sincronizar. Algunos eventos salen con el estado a medias (`cerrojoActivado` ocurre en medio del empuje), y por eso la vista solo repinta y no calcula nada a partir de ellos. Al empujar suenan `EMPUJE` y `PASO` juntos. `Nivel` ya tiene 16 métodos (jugada, memento, observadores): el escáner lo señala como cohesión a vigilar; una extracción posible es sacar el Memento o los eventos a otra clase. `VentanaPrincipal` muestra los diálogos con `invokeLater` para no bloquear el reparto de eventos. En `SelectorDeSprites` hay un `switch` con patrones sobre el tipo de caja: se acepta en la vista porque el modelo no debe conocer imágenes; un Visitor sería más pesado de lo que justifica.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Observer (interfaz) | `ObservadorDeJuego` | Implementada |
+| Subject (reparto) | `DifusorDeEventos`, usado en `Nivel` y `Partida` | Implementada |
+| Observers concretos | `PanelDeTablero`, `PanelHud`, `VentanaPrincipal`, `SonidosDelJuego` | Implementada |
+| Controller | `ControladorDeJuego` | Implementada |
+| Abstracción de audio | `ReproductorDeSonido`, `ReproductorJavaSound` | Implementada |
+
+### 7. Cómo se extiende
+Un contador de logros o estadísticas es un nuevo `ObservadorDeJuego` registrado en `Main`. Para cambiar el sonido (otro motor de audio) se escribe otra implementación de `ReproductorDeSonido`.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Cómo evitan que el modelo dependa de la vista, y por qué no es un Singleton el sonido?
+**Respuesta breve:** El modelo emite eventos por una interfaz y la vista, el HUD y el sonido se registran como observadores; el modelo nunca los nombra. El reproductor de sonido se crea una vez en `Main` y se inyecta: evitamos el estado global y podemos probar con un reproductor falso.
+
+---
+
+## DD-010: Imágenes compartidas con Flyweight
+
+- **Fecha:** 2026-10-23
+- **Estado:** Propuesta
+- **Patrón / principio:** Flyweight (GoF)
+- **Requisito relacionado:** Todos los elementos del tablero representados por imágenes (requisito no confirmado)
+
+### 1. Problema y contexto
+Un tablero tiene decenas de celdas y se repinta con cada movimiento; muchas celdas usan la misma imagen (por ejemplo, todas las paredes). Leer el PNG por celda y por repintado sería un desperdicio de tiempo y memoria. El estado propio de cada celda (su posición) es chico y distinto, mientras que la imagen es idéntica y puede compartirse.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| `RepositorioDeImagenes` (Flyweight Factory) con un mapa nombre→imagen | Cada imagen se carga una vez; el estado externo (posición) lo da el panel al dibujar | Un mapa más que mantener | (elegida) |
+| Cargar la imagen en cada repintado | Sin cache, sin estado | Lectura de disco repetida cientos de veces | Costoso e innecesario |
+| Un campo `BufferedImage` por celda del modelo | Sin mapa | Mezcla imágenes con el modelo (rompe MVC) | Viola la separación de capas |
+
+### 3. Decisión
+`RepositorioDeImagenes.imagen(nombre)` carga el PNG la primera vez y devuelve la misma instancia después. `PanelDeTablero` lo consulta al dibujar y pasa la posición como estado extrínseco. `SelectorDeSprites` decide qué nombre corresponde a cada elemento del modelo.
+
+### 4. Principios que favorece
+- **SRP:** cargar imágenes es una responsabilidad aparte del dibujo.
+- **MVC:** el modelo no conoce ninguna imagen.
+
+### 5. Consecuencias y costos
+La cache nunca se vacía (aceptable: hay once imágenes de 48×48). No se midió la mejora real; el beneficio es conceptual y se explica por el problema (releer el mismo archivo muchas veces). Si se agregan temas gráficos, el repositorio podría parametrizarse por tema (Abstract Factory).
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase | Estado |
+|---|---|---|
+| Flyweight Factory | `RepositorioDeImagenes` | Implementada |
+| Flyweight (objeto compartido) | `BufferedImage` por nombre | Implementada |
+| Cliente con estado extrínseco | `PanelDeTablero` | Implementada |
+
+### 7. Cómo se extiende
+Una imagen nueva es un PNG en `resources/images` y una entrada en `SelectorDeSprites`. Un tema alternativo cambia la carpeta de imágenes sin tocar el dibujo.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Flyweight para las imágenes?
+**Respuesta breve:** Muchas celdas comparten la misma imagen y el tablero se repinta todo el tiempo. Cargamos cada PNG una sola vez y lo compartimos; lo único distinto entre celdas, su posición, lo aporta el panel al dibujar. No lo medimos con números, así que lo defendemos por el problema que evita.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
 - Reglas del undo (cuántos pasos, usos consecutivos, qué restaura).
 - Reglas del terreno resbaladizo, cajas frágiles y llave/cerrojo/muro.
-- Formato del nivel `.txt` y cantidad de niveles.
+- Formato del nivel `.txt` y cantidad de niveles (hoy: 4 niveles de ejemplo, uno por característica).
+- Origen de los assets: hoy son generados por código (CC0); confirmar si el enunciado exige recursos de terceros de dominio público.
 - Qué pasa al terminar el último nivel (hoy: pasa por `NIVEL_COMPLETADO` y luego `JUEGO_TERMINADO`).
 - Si las cajas llave y frágiles también deben terminar sobre destinos (hoy: todas las cajas).
 - Resistencia de la caja frágil: fija en 3 (¿o definida por nivel?) y qué pasa si el nivel queda irresoluble.
@@ -441,3 +536,5 @@ Guardar y cargar partida (funcionalidad adicional posible) se apoya en `EstadoNi
 | DD-006 | Borrador de la entrada, estrategias de movimiento, hielo y tests | completar |
 | DD-007 | Borrador de la entrada, cajas frágil/llave, Observer cerrojo–muro, cargador y tests | completar |
 | DD-008 | Borrador de la entrada, Memento, historial, sesión de nivel y tests | completar |
+| DD-009 | Borrador de la entrada, eventos del modelo, vista Swing, HUD, sonido, controlador y tests | completar |
+| DD-010 | Borrador de la entrada, repositorio de imágenes, generador de assets y tests | completar |
