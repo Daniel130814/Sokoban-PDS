@@ -2,53 +2,66 @@ package sokoban.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /** Reparte cada evento a todos los observadores registrados (lado Subject del Observer). */
 public class DifusorDeEventos implements ObservadorDeJuego {
 
     private final List<ObservadorDeJuego> observadores = new ArrayList<>();
+    private boolean silenciado;
 
     public void agregar(ObservadorDeJuego observador) {
         observadores.add(observador);
     }
 
+    /** Mientras está silenciado no avisa a nadie (por ejemplo, al reproducir una partida guardada). */
+    public void silenciar(boolean silenciado) {
+        this.silenciado = silenciado;
+    }
+
+    private void difundir(Consumer<ObservadorDeJuego> evento) {
+        if (!silenciado) {
+            observadores.forEach(evento);
+        }
+    }
+
     @Override
     public void jugadorSeMovio() {
-        observadores.forEach(ObservadorDeJuego::jugadorSeMovio);
+        difundir(ObservadorDeJuego::jugadorSeMovio);
     }
 
     @Override
     public void cajaEmpujada() {
-        observadores.forEach(ObservadorDeJuego::cajaEmpujada);
+        difundir(ObservadorDeJuego::cajaEmpujada);
     }
 
     @Override
     public void cajaSeRompio() {
-        observadores.forEach(ObservadorDeJuego::cajaSeRompio);
+        difundir(ObservadorDeJuego::cajaSeRompio);
     }
 
     @Override
     public void cerrojoActivado() {
-        observadores.forEach(ObservadorDeJuego::cerrojoActivado);
+        difundir(ObservadorDeJuego::cerrojoActivado);
     }
 
     @Override
     public void estadoRestaurado() {
-        observadores.forEach(ObservadorDeJuego::estadoRestaurado);
+        difundir(ObservadorDeJuego::estadoRestaurado);
     }
 
     @Override
     public void nivelCompletado() {
-        observadores.forEach(ObservadorDeJuego::nivelCompletado);
+        difundir(ObservadorDeJuego::nivelCompletado);
     }
 
     @Override
     public void nivelCambiado() {
-        observadores.forEach(ObservadorDeJuego::nivelCambiado);
+        difundir(ObservadorDeJuego::nivelCambiado);
     }
 
     @Override
     public void juegoTerminado() {
-        observadores.forEach(ObservadorDeJuego::juegoTerminado);
+        difundir(ObservadorDeJuego::juegoTerminado);
     }
 }

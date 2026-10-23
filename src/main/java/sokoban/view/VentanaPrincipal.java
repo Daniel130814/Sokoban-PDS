@@ -5,6 +5,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import sokoban.controller.ControladorDeJuego;
+import sokoban.logros.Logros;
 import sokoban.model.ObservadorDeJuego;
 import sokoban.model.Partida;
 import sokoban.model.puntaje.ResumenDeNivel;
@@ -14,13 +15,14 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     private final Partida partida;
     private final ControladorDeJuego controlador;
 
-    public VentanaPrincipal(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes) {
+    public VentanaPrincipal(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes,
+            Logros logros) {
         super("Sokoban - Los Desinformaticos");
         this.partida = partida;
         this.controlador = controlador;
 
         PanelDeTablero tablero = new PanelDeTablero(partida, controlador, imagenes);
-        PanelHud hud = new PanelHud(partida, controlador);
+        PanelHud hud = new PanelHud(partida, controlador, logros);
         partida.agregarObservador(tablero);
         partida.agregarObservador(hud);
         partida.agregarObservador(this);

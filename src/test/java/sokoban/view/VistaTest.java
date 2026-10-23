@@ -13,6 +13,8 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import sokoban.controller.ControladorDeJuego;
+import sokoban.logros.CatalogoDeLogros;
+import sokoban.logros.Logros;
 import sokoban.model.CajaFragil;
 import sokoban.model.CajaLlave;
 import sokoban.model.CajaNormal;
@@ -83,7 +85,7 @@ class VistaTest {
     @Test
     void elHudMuestraLosContadoresDelNivel() {
         Partida partida = partida("#######", "#@  $.#", "#######");
-        PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida));
+        PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida), new Logros(partida, CatalogoDeLogros.estandar()));
         partida.agregarObservador(hud);
 
         partida.mover(Direccion.DERECHA);

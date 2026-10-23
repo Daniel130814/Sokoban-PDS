@@ -15,6 +15,8 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-009: Vista, HUD y sonido con Observer; controlador sin Swing
 - DD-010: Imágenes compartidas con Flyweight
 - DD-011: Puntaje con Strategy
+- DD-012: Guardar y cargar partida con Command (registro de acciones)
+- DD-013: Logros con Observer y Strategy
 
 ---
 
@@ -561,6 +563,101 @@ Un criterio nuevo es una clase que implementa `EstrategiaDePuntaje`, y se elige 
 
 ---
 
+## DD-012: Guardar y cargar partida con Command (registro de acciones)
+
+- **Fecha:** 2026-10-23
+- **Estado:** Propuesta
+- **Patrón / principio:** Command (GoF); SRP; OCP. Funcionalidad adicional 1
+- **Requisito relacionado:** Dos funcionalidades adicionales que apliquen patrones de diseño (requisito no confirmado; la elección de estas dos es una propuesta del equipo de desarrollo pendiente de validar)
+
+### 1. Problema y contexto
+Se quiere guardar una partida en un archivo y retomarla después. Hay que decidir qué se guarda. El `EstadoNivel` del Memento (DD-008) es opaco a propósito: solo `Nivel` lee su contenido y apunta a objetos del modelo. Serializarlo exigiría abrirlo, justo lo que se evitó. En cambio, el juego es determinista: el mismo nivel y las mismas acciones del jugador producen siempre el mismo estado.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Command: cada acción es un objeto `Accion`; se guarda el registro y se reproduce | El modelo no cambia; incluye undo, reinicio y avance de nivel; no abre el Memento; sirve de base para un replay | Cargar reproduce toda la partida (lento solo si fuera muy larga); archivo ligado al orden de los niveles | (elegida) |
+| Serializar `EstadoNivel` (Memento) | Carga instantánea | Obliga a exponer el contenido del Memento y a identificar cada caja al restaurar; pierde el historial de undo | Rompe el encapsulamiento que se buscó en DD-008 |
+| Lista de enums y un `switch` para reproducirla | Menos clases | El `switch` crece con cada acción nueva | Menos extensible |
+
+### 3. Decisión
+`Accion` (Command) tiene `ejecutar(Partida)`, que dice si tuvo efecto, y `comoTexto()`. Hay cuatro acciones: `Mover`, `Deshacer`, `Reiniciar` y `Continuar`. `ControladorDeJuego` es el invocador: crea la acción, la ejecuta y registra solo las que tuvieron efecto, de modo que una tecla contra una pared no ensucia el archivo. `GuardadoDePartida` escribe y lee el registro (un encabezado y una acción por línea). Para cargar, `Partida.reconstruir` deja los niveles como al empezar usando sus estados iniciales (el Memento, reutilizado), reproduce las acciones sin avisar a los observadores y avisa una sola vez que cambió el nivel. Sin ese silencio, cada paso reproducido abriría el diálogo de nivel completado o sonaría.
+
+La lectura y la validación del archivo se hacen antes de tocar la partida: un archivo inválido lanza `GuardadoInvalidoException` y la partida en curso queda como estaba (hay un test).
+
+### 4. Principios que favorece
+- **SRP:** quien guarda no ejecuta; quien ejecuta no sabe de archivos.
+- **OCP:** una acción nueva es una clase más y una línea en el mapa de `GuardadoDePartida`.
+- **Encapsulamiento:** el Memento sigue siendo opaco.
+
+### 5. Consecuencias y costos
+Se usa Command solo para registrar y reproducir: ninguna acción implementa `deshacer()` porque eso ya lo resuelve el Memento. El valor del patrón es moderado: la alternativa sin patrón (lista de enums) también hubiera funcionado. El archivo `partida-guardada.txt` queda ligado al orden y contenido de los niveles; si se editan los niveles, un guardado viejo puede dar otro resultado (las acciones que ya no se pueden ejecutar se ignoran). Los logros (DD-013) no se reconstruyen al cargar porque la reproducción es silenciosa. El guardado es un solo archivo fijo en el directorio de ejecución; no hay selector de archivos. El `JOptionPane` y los botones de la vista no tienen pruebas automáticas.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Command | `Accion` | Implementada |
+| Comandos concretos | `Mover`, `Deshacer`, `Reiniciar`, `Continuar` | Implementada |
+| Invoker / registro | `ControladorDeJuego` | Implementada |
+| Receiver | `Partida` | Implementada |
+| Persistencia del registro | `GuardadoDePartida` | Implementada |
+| Reconstrucción silenciosa | `Partida.reconstruir`, `DifusorDeEventos.silenciar` | Implementada |
+
+### 7. Cómo se extiende
+Un replay visible (reproducir paso a paso con pausa) usa el mismo registro, ejecutando una acción por tick con los observadores activos. Una acción nueva (por ejemplo, pausa) es una clase `Accion` y una entrada en el mapa de lectura.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Command y no guardar directamente el estado con el Memento?
+**Respuesta breve:** Nuestro Memento es opaco a propósito y serializarlo obligaría a abrirlo. Como el juego es determinista, alcanza con guardar las acciones del jugador y reproducirlas desde el estado inicial. Command nos da esas acciones como objetos que se registran, se guardan y se ejecutan de la misma manera. Reconocemos que acá solo registra y reproduce, no revierte.
+
+---
+
+## DD-013: Logros con Observer y Strategy
+
+- **Fecha:** 2026-10-23
+- **Estado:** Propuesta
+- **Patrón / principio:** Observer (GoF) y Strategy (GoF); OCP; Low Coupling. Funcionalidad adicional 2
+- **Requisito relacionado:** Dos funcionalidades adicionales que apliquen patrones de diseño (requisito no confirmado; elección pendiente de validar por el equipo)
+
+### 1. Problema y contexto
+Se quiere dar logros ("Completá un nivel sin deshacer", "Abrí un muro con una caja llave") sin que el modelo sepa nada de ellos. Lo que cambia con frecuencia es el catálogo de logros y sus condiciones; lo estable es el flujo de eventos del juego.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| `Logros` observa los eventos y cada `Logro` trae su criterio (`CriterioDeLogro`) | El modelo no cambia; un logro nuevo es una línea del catálogo | Dos patrones juntos; los criterios dependen de los contadores que haya | (elegida) |
+| Contadores y `if` dentro del modelo (`Nivel`, `Partida`) | Sin clases nuevas | Mezcla reglas del juego con premios; el modelo crece | Viola SRP y OCP |
+| Un solo observador con un `switch` por logro | Menos piezas | El `switch` crece con cada logro | Menos extensible |
+
+### 3. Decisión
+`Logros` es un Observer: implementa `ObservadorDeJuego`, acumula `EstadisticasDeJuego` (empujes, cajas rotas, cerrojos activados, niveles completados y niveles sin deshacer) y, después de cada evento, evalúa los logros todavía no desbloqueados. Cada `Logro` es un registro con nombre, descripción y un `CriterioDeLogro` (Strategy): una función que decide si se cumple a partir de las estadísticas. El catálogo estándar son cinco logros definidos con lambdas. El HUD se registra para avisar cuando se desbloquea uno y muestra "Logros: n/5". Para saber si un nivel se completó sin deshacer, `Logros` consulta a `Partida.resumenDelNivel()`.
+
+### 4. Principios que favorece
+- **OCP:** un logro nuevo se agrega al catálogo sin tocar `Logros` ni el modelo (un test usa un catálogo propio).
+- **Low Coupling:** el modelo no conoce los logros; solo emite eventos.
+- **SRP:** `Logros` acumula y desbloquea; cada criterio decide por sí mismo.
+
+### 5. Consecuencias y costos
+El Strategy es funcional (lambdas) y conviven dos usos de Strategy en el proyecto (puntaje y logros), además de varios Observer: es coherente pero repite patrones, lo cual el equipo debería poder justificar en cada caso. Los logros se pierden al cerrar el juego (no se persisten) y no se reconstruyen al cargar una partida, porque la reproducción es silenciosa; es una limitación asumida. Al reiniciar un nivel los contadores de logros no se descuentan: un empuje cuenta aunque después se deshaga o se reinicie. Los criterios de los logros leen contadores públicos de `EstadisticasDeJuego`; si un criterio necesita otro dato, hay que agregar el contador.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Observer concreto | `Logros` | Implementada |
+| Strategy | `CriterioDeLogro` | Implementada |
+| Estrategias concretas | Lambdas en `CatalogoDeLogros.estandar()` | Implementada |
+| Datos y contadores | `Logro`, `EstadisticasDeJuego` | Implementada |
+| Vista del logro | `PanelHud` (etiqueta de logros) | Implementada |
+
+### 7. Cómo se extiende
+Un logro nuevo ("Cinco niveles sin deshacer") es otra línea en `CatalogoDeLogros`. Un logro persistente se puede lograr guardando los nombres desbloqueados en un archivo, sin tocar el modelo.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Dónde está el Strategy en los logros y por qué un Observer?
+**Respuesta breve:** `Logros` escucha los eventos que el modelo ya emite, así que el juego no sabe que existen. Cada logro lleva su propio criterio como una estrategia, y por eso un logro nuevo es una línea en el catálogo. Es un Strategy funcional con lambdas, y lo decimos así.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -568,6 +665,7 @@ Un criterio nuevo es una clase que implementa `EstrategiaDePuntaje`, y se elige 
 - Reglas del terreno resbaladizo, cajas frágiles y llave/cerrojo/muro.
 - Formato del nivel `.txt` y cantidad de niveles (hoy: 4 niveles de ejemplo, uno por característica).
 - Origen de los assets: hoy son generados por código (CC0); confirmar si el enunciado exige recursos de terceros de dominio público.
+- Las dos funcionalidades adicionales (hoy: guardar/cargar con Command y logros con Observer + Strategy; propuesta a validar por el equipo y a confirmar con el enunciado).
 - Criterio de puntaje (hoy: 1000 base, −10 por movimiento, −5 por empuje, −50 por deshacer; valores a ajustar).
 - Qué pasa al terminar el último nivel (hoy: pasa por `NIVEL_COMPLETADO` y luego `JUEGO_TERMINADO`).
 - Si las cajas llave y frágiles también deben terminar sobre destinos (hoy: todas las cajas).
@@ -591,3 +689,5 @@ Un criterio nuevo es una clase que implementa `EstrategiaDePuntaje`, y se elige 
 | DD-009 | Borrador de la entrada, eventos del modelo, vista Swing, HUD, sonido, controlador y tests | completar |
 | DD-010 | Borrador de la entrada, repositorio de imágenes, generador de assets y tests | completar |
 | DD-011 | Borrador de la entrada, estrategia de puntaje, resumen de nivel y tests | completar |
+| DD-012 | Propuesta de las dos funcionalidades adicionales, borrador de la entrada, acciones, guardado y tests | completar |
+| DD-013 | Borrador de la entrada, logros, criterios y tests | completar |

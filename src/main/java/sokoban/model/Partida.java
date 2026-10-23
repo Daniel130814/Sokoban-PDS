@@ -1,6 +1,7 @@
 package sokoban.model;
 
 import java.util.List;
+import java.util.function.Consumer;
 import sokoban.model.enums.Direccion;
 import sokoban.model.enums.EstadoPartida;
 import sokoban.model.puntaje.EstadisticasDeNivel;
@@ -14,6 +15,7 @@ public class Partida {
     private int indiceActual;
     private final DifusorDeEventos observadores = new DifusorDeEventos();
     private final EstrategiaDePuntaje estrategiaDePuntaje;
+    private final List<EstadoNivel> estadosIniciales;
     private SesionDeNivel sesion;
     private EstadoPartida estado = EstadoPartida.JUGANDO;
 
@@ -28,7 +30,28 @@ public class Partida {
         this.estrategiaDePuntaje = estrategiaDePuntaje;
         this.niveles = List.copyOf(niveles);
         this.niveles.forEach(nivel -> nivel.agregarObservador(observadores));
+        this.estadosIniciales = this.niveles.stream().map(Nivel::guardarEstado).toList();
         this.sesion = new SesionDeNivel(niveles.get(0));
+    }
+
+    /**
+     * Deja todos los niveles como al empezar, ejecuta las acciones dadas sin avisar a los observadores y
+     * después avisa una sola vez que el nivel cambió, para que la vista se refresque.
+     */
+    public void reconstruir(Consumer<Partida> acciones) {
+        observadores.silenciar(true);
+        try {
+            for (int i = 0; i < niveles.size(); i++) {
+                niveles.get(i).restaurar(estadosIniciales.get(i));
+            }
+            indiceActual = 0;
+            estado = EstadoPartida.JUGANDO;
+            sesion = new SesionDeNivel(niveles.get(0));
+            acciones.accept(this);
+        } finally {
+            observadores.silenciar(false);
+        }
+        observadores.nivelCambiado();
     }
 
     public void agregarObservador(ObservadorDeJuego observador) {

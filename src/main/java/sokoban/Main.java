@@ -6,6 +6,8 @@ import sokoban.audio.ReproductorJavaSound;
 import sokoban.audio.SonidosDelJuego;
 import sokoban.controller.ControladorDeJuego;
 import sokoban.exception.NivelInvalidoException;
+import sokoban.logros.CatalogoDeLogros;
+import sokoban.logros.Logros;
 import sokoban.model.Nivel;
 import sokoban.model.Partida;
 import sokoban.model.carga.CargadorDeNivel;
@@ -33,8 +35,10 @@ public class Main {
             return;
         }
         partida.agregarObservador(new SonidosDelJuego(new ReproductorJavaSound()));
+        Logros logros = new Logros(partida, CatalogoDeLogros.estandar());
+        partida.agregarObservador(logros);
         ControladorDeJuego controlador = new ControladorDeJuego(partida);
         SwingUtilities.invokeLater(() ->
-                new VentanaPrincipal(partida, controlador, new RepositorioDeImagenes()).setVisible(true));
+                new VentanaPrincipal(partida, controlador, new RepositorioDeImagenes(), logros).setVisible(true));
     }
 }
