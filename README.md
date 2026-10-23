@@ -31,9 +31,35 @@ Ejecuta los tests. En Windows se usa `mvnw.cmd`.
 java -cp target/classes sokoban.Main
 ```
 
-Compila y abre el juego. Se juega con las flechas del teclado; los botones permiten deshacer y reiniciar el nivel.
+Compila y abre el juego.
+
+## Cómo se juega
+
+- **Flechas del teclado:** mover al jugador. Solo se empuja (no se tira) y una caja a la vez.
+- **Deshacer:** retrocede hasta 5 movimientos; se puede usar 3 veces seguidas y guarda los últimos 15 estados.
+- **Reiniciar:** vuelve al comienzo del nivel.
+- **Guardar / Cargar:** guarda la partida en `partida-guardada.txt` (en el directorio donde se ejecuta) y la retoma.
+- **Elementos:** cajas normales, frágiles (se rompen tras 3 empujes), cajas llave que abren muros al quedar sobre su cerrojo, hielo en el que las cajas se deslizan, y un puntaje por nivel.
+- **Logros:** el HUD muestra los logros desbloqueados en la sesión.
+
+Los niveles son archivos de texto en `src/main/resources/levels`. Leyenda: `#` pared, ` ` piso, `.` destino,
+`$` caja, `*` caja sobre destino, `%` caja frágil, `@` jugador, `+` jugador sobre destino, `~` hielo,
+`a`–`i` caja llave, `1`–`9` cerrojo y `A`–`I` muro cerrado (la letra y el número se corresponden: `a`, `1` y `A` van juntos).
+
+## Estructura del código
+
+| Paquete | Rol |
+|---|---|
+| `sokoban.model` | Reglas del juego, sin ninguna dependencia de Swing (subpaquetes `carga`, `enums`, `puntaje`) |
+| `sokoban.controller` | Traduce teclas y botones en acciones (`accion` contiene el patrón Command) |
+| `sokoban.view` | Interfaz Swing: tablero, HUD y ventana |
+| `sokoban.audio` | Efectos de sonido |
+| `sokoban.logros` | Logros (Observer + Strategy) |
+| `sokoban.persistencia` | Guardado y carga de partidas |
 
 ## Documentación de diseño
 
 - [Registro de decisiones de diseño](docs/apuntes/decisiones-de-diseno.md): por qué elegimos cada patrón y cómo se aplica.
+- [Resumen para el informe y la defensa](docs/apuntes/resumen-para-el-informe.md): tabla patrón → clases → pruebas, cobertura de requisitos y puntos pendientes.
+- [Diagrama de clases](docs/uml/diagrama-de-clases.md): base en Mermaid para armar el diagrama de StarUML.
 - [Assets del juego](docs/apuntes/assets.md): origen de imágenes y sonidos.

@@ -56,10 +56,13 @@ Más estructura antes de tener juego visible. Mitigación: los paquetes se llena
 ### 6. Dónde está en el código
 | Rol | Paquete | Estado |
 |---|---|---|
-| Model | `sokoban.model` | Planificada |
-| View | `sokoban.view` | Planificada |
-| Controller | `sokoban.controller` | Planificada |
-| Utilidades | `sokoban.util` | Planificada |
+| Model | `sokoban.model` (con subpaquetes `carga`, `enums`, `puntaje`) | Implementada |
+| View | `sokoban.view` | Implementada |
+| Controller | `sokoban.controller` (con `accion`) | Implementada |
+| Otras capas surgidas después | `sokoban.audio`, `sokoban.logros`, `sokoban.persistencia`, `sokoban.exception` | Implementada |
+| Utilidades | `sokoban.util` | No hizo falta: no existe |
+
+Regla verificada por `ArquitecturaTest`: `model`, `controller`, `logros` y `persistencia` no importan Swing, AWT ni javax.sound.
 
 ### 7. Cómo se extiende
 Cambiar de Swing a otra interfaz solo requiere una nueva vista y su controlador; `sokoban.model` no se toca.
@@ -89,6 +92,8 @@ Necesitamos un modelo mínimo para mover al jugador por un tablero con paredes, 
 
 ### 3. Decisión
 `Posicion` es un `record` inmutable que sabe calcular su vecina. `Tablero` conoce qué hay en cada celda y si se puede transitar (Information Expert). `Jugador` conoce su posición y decide si se mueve consultando al tablero. `Direccion` y `TipoCelda` son enums porque tienen un conjunto cerrado de valores. Usamos enums en lugar de clases por celda porque hoy no hay comportamiento que justifique polimorfismo; no se aplica ningún patrón GoF todavía.
+
+**Actualización (DD-003):** `Jugador` ya no decide si se mueve; solo guarda su posición, y la jugada la coordina `Nivel`.
 
 ### 4. Principios que favorece
 - **SRP:** el tablero no se mueve, el jugador no conoce la matriz de celdas.
@@ -142,14 +147,14 @@ El jugador empuja cajas y el enunciado (según la skill, sin confirmar) pide var
 - **Low Coupling:** `Jugador` y `Caja` no se conocen entre sí; `Nivel` los relaciona.
 
 ### 5. Consecuencias y costos
-`alSerEmpujada()` hoy es un método vacío en la única subclase: es una previsión, no una necesidad ya resuelta. La hipótesis se valida en la Etapa 6; si las cajas frágiles y llave no usaran ese punto, se debe reevaluar. `Caja.irA` y `Jugador.irA` son visibles solo dentro del paquete para que nadie fuera de `Nivel` mueva piezas saltándose las reglas. Se cambió el comportamiento de la Etapa 1: `Jugador.mover` se eliminó y sus pruebas pasaron a `NivelTest`.
+`alSerEmpujada()` hoy es un método vacío en la única subclase: es una previsión, no una necesidad ya resuelta. La hipótesis se validó en la Etapa 6 (DD-007): `CajaFragil` usa `alSerEmpujada()`, y `CajaLlave` necesitó además otro punto de variación (`alAsentarseEn`). `Caja.irA` y `Jugador.irA` son visibles solo dentro del paquete para que nadie fuera de `Nivel` mueva piezas saltándose las reglas. Se cambió el comportamiento de la Etapa 1: `Jugador.mover` se eliminó y sus pruebas pasaron a `NivelTest`.
 
 ### 6. Dónde está en el código
 | Rol | Clase | Estado |
 |---|---|---|
 | Abstracción | `Caja` | Implementada |
 | Variante concreta | `CajaNormal` | Implementada |
-| Variantes futuras | `CajaFragil`, `CajaLlave` | Planificadas |
+| Variantes agregadas después | `CajaFragil`, `CajaLlave` | Implementadas (ver DD-007) |
 | Coordinador de la jugada | `Nivel` | Implementada |
 
 ### 7. Cómo se extiende
