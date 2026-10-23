@@ -14,6 +14,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-008: Deshacer y reiniciar con Memento
 - DD-009: Vista, HUD y sonido con Observer; controlador sin Swing
 - DD-010: Imágenes compartidas con Flyweight
+- DD-011: Puntaje con Strategy
 
 ---
 
@@ -510,6 +511,56 @@ Una imagen nueva es un PNG en `resources/images` y una entrada en `SelectorDeSpr
 
 ---
 
+## DD-011: Puntaje con Strategy
+
+- **Fecha:** 2026-10-23
+- **Estado:** Propuesta
+- **Patrón / principio:** Strategy (GoF); GRASP Protected Variations; OCP; DIP
+- **Requisito relacionado:** Al terminar cada nivel, resumen con movimientos, empujes, uso del undo y puntaje final; el criterio lo define el equipo (requisito no confirmado)
+
+### 1. Problema y contexto
+El criterio de puntaje es libre y es probable que se ajuste mientras se prueba el juego (cuánto pesa un movimiento, un empuje o un deshacer). Lo estable son los datos del nivel y el momento en que se calcula.
+
+Criterio adoptado de forma provisoria (`PuntajePorEficiencia`): 1000 puntos de base, menos 10 por movimiento, 5 por empuje y 50 por cada uso de deshacer, con piso en 0. Se penaliza más el deshacer para que usarlo tenga un costo visible; los números son un primer valor para probar, no una decisión final.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Strategy: `EstrategiaDePuntaje` inyectada en `Partida` | Cambiar o probar un criterio no toca la partida; se prueba con una función de una línea | Una interfaz y un record más; hoy hay una sola implementación real | (elegida) |
+| Clase `CalculadorDePuntaje` concreta | Más simple, sin interfaz | Cambiar el criterio obliga a editar la clase que usa `Partida`; no se puede probar con un criterio falso | Menos flexible para algo que se espera ajustar |
+| Fórmula dentro de `Partida` | Sin clases nuevas | Mezcla secuenciar niveles con puntuar (SRP) | Dificulta probar y cambiar la fórmula |
+
+### 3. Decisión
+`EstrategiaDePuntaje` recibe `EstadisticasDeNivel` (movimientos, empujes, usos de deshacer) y devuelve un entero. `Partida` es el contexto: arma las estadísticas con `Nivel` y `SesionDeNivel` y delega el cálculo, devolviendo un `ResumenDeNivel` en `resumenDelNivel()`, que solo puede pedirse con el nivel completado. La estrategia se inyecta por constructor desde `Main` (hay una sobrecarga sin estrategia que usa la de eficiencia, para los tests). `VentanaPrincipal` muestra el resumen con el puntaje final.
+
+Honestidad sobre el patrón: hoy existe una única estrategia real. El valor está en que el criterio quedó aislado e intercambiable, lo que un test ya demuestra con una estrategia de una línea; si el equipo sabe que nunca cambiará la fórmula, bastaba una clase simple.
+
+### 4. Principios que favorece
+- **Protected Variations / OCP:** la parte que probablemente cambie (la fórmula) queda detrás de una interfaz estable.
+- **DIP:** `Partida` depende de la abstracción `EstrategiaDePuntaje`.
+- **SRP:** `Partida` secuencia niveles; el criterio de puntaje vive aparte.
+
+### 5. Consecuencias y costos
+Una interfaz y dos records más para una sola implementación. La sobrecarga del constructor con estrategia por defecto esconde la dependencia en los tests; `Main` la inyecta explícitamente. El puntaje se calcula por nivel; no hay total acumulado de la partida. Los valores de penalización son arbitrarios y no se validaron con jugadores.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Strategy | `EstrategiaDePuntaje` | Implementada |
+| ConcreteStrategy | `PuntajePorEficiencia` | Implementada |
+| Context | `Partida` (`resumenDelNivel()`) | Implementada |
+| Datos de entrada y salida | `EstadisticasDeNivel`, `ResumenDeNivel` | Implementada |
+| Segundas estrategias (por ejemplo, solo por movimientos) | — | No planificadas |
+
+### 7. Cómo se extiende
+Un criterio nuevo es una clase que implementa `EstrategiaDePuntaje`, y se elige en `Main`. Si hace falta otro dato (por ejemplo, tiempo), se agrega a `EstadisticasDeNivel` sin tocar las estrategias existentes que no lo usen.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Strategy para el puntaje, si hay una sola fórmula?
+**Respuesta breve:** El enunciado deja el criterio libre y lo vamos a ajustar al probar, así que lo aislamos detrás de una interfaz: cambiarlo no toca la partida y lo probamos con un criterio falso. Reconocemos que hoy hay una sola implementación; si la fórmula nunca cambiara, una clase simple hubiera alcanzado.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -517,6 +568,7 @@ Una imagen nueva es un PNG en `resources/images` y una entrada en `SelectorDeSpr
 - Reglas del terreno resbaladizo, cajas frágiles y llave/cerrojo/muro.
 - Formato del nivel `.txt` y cantidad de niveles (hoy: 4 niveles de ejemplo, uno por característica).
 - Origen de los assets: hoy son generados por código (CC0); confirmar si el enunciado exige recursos de terceros de dominio público.
+- Criterio de puntaje (hoy: 1000 base, −10 por movimiento, −5 por empuje, −50 por deshacer; valores a ajustar).
 - Qué pasa al terminar el último nivel (hoy: pasa por `NIVEL_COMPLETADO` y luego `JUEGO_TERMINADO`).
 - Si las cajas llave y frágiles también deben terminar sobre destinos (hoy: todas las cajas).
 - Resistencia de la caja frágil: fija en 3 (¿o definida por nivel?) y qué pasa si el nivel queda irresoluble.
@@ -538,3 +590,4 @@ Una imagen nueva es un PNG en `resources/images` y una entrada en `SelectorDeSpr
 | DD-008 | Borrador de la entrada, Memento, historial, sesión de nivel y tests | completar |
 | DD-009 | Borrador de la entrada, eventos del modelo, vista Swing, HUD, sonido, controlador y tests | completar |
 | DD-010 | Borrador de la entrada, repositorio de imágenes, generador de assets y tests | completar |
+| DD-011 | Borrador de la entrada, estrategia de puntaje, resumen de nivel y tests | completar |

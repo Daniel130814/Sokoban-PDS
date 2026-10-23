@@ -10,6 +10,7 @@ import sokoban.model.Nivel;
 import sokoban.model.Partida;
 import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
+import sokoban.model.puntaje.PuntajePorEficiencia;
 import sokoban.view.RepositorioDeImagenes;
 import sokoban.view.VentanaPrincipal;
 
@@ -26,7 +27,7 @@ public class Main {
         try {
             CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
             List<Nivel> niveles = NIVELES.stream().map(cargador::cargarDesdeRecurso).toList();
-            partida = new Partida(niveles);
+            partida = new Partida(niveles, new PuntajePorEficiencia());
         } catch (NivelInvalidoException e) {
             System.err.println("No se pudieron cargar los niveles: " + e.getMessage());
             return;

@@ -5,9 +5,9 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import sokoban.controller.ControladorDeJuego;
-import sokoban.model.Nivel;
 import sokoban.model.ObservadorDeJuego;
 import sokoban.model.Partida;
+import sokoban.model.puntaje.ResumenDeNivel;
 
 public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
 
@@ -35,10 +35,11 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
 
     @Override
     public void nivelCompletado() {
-        Nivel nivel = partida.nivelActual();
-        String resumen = "Nivel completado\n\nMovimientos: " + nivel.movimientos()
-                + "\nEmpujes: " + nivel.empujes()
-                + "\nDeshacer usado: " + partida.usosDeDeshacer() + " veces";
+        ResumenDeNivel datos = partida.resumenDelNivel();
+        String resumen = "Nivel completado\n\nMovimientos: " + datos.estadisticas().movimientos()
+                + "\nEmpujes: " + datos.estadisticas().empujes()
+                + "\nDeshacer usado: " + datos.estadisticas().usosDeDeshacer() + " veces"
+                + "\n\nPuntaje final: " + datos.puntaje();
         SwingUtilities.invokeLater(() -> {
             JOptionPane.showMessageDialog(this, resumen, "Resumen del nivel", JOptionPane.INFORMATION_MESSAGE);
             controlador.continuar();

@@ -3,19 +3,29 @@ package sokoban.model;
 import java.util.List;
 import sokoban.model.enums.Direccion;
 import sokoban.model.enums.EstadoPartida;
+import sokoban.model.puntaje.EstadisticasDeNivel;
+import sokoban.model.puntaje.EstrategiaDePuntaje;
+import sokoban.model.puntaje.PuntajePorEficiencia;
+import sokoban.model.puntaje.ResumenDeNivel;
 
 public class Partida {
 
     private final List<Nivel> niveles;
     private int indiceActual;
     private final DifusorDeEventos observadores = new DifusorDeEventos();
+    private final EstrategiaDePuntaje estrategiaDePuntaje;
     private SesionDeNivel sesion;
     private EstadoPartida estado = EstadoPartida.JUGANDO;
 
     public Partida(List<Nivel> niveles) {
+        this(niveles, new PuntajePorEficiencia());
+    }
+
+    public Partida(List<Nivel> niveles, EstrategiaDePuntaje estrategiaDePuntaje) {
         if (niveles.isEmpty()) {
             throw new IllegalArgumentException("Una partida necesita al menos un nivel");
         }
+        this.estrategiaDePuntaje = estrategiaDePuntaje;
         this.niveles = List.copyOf(niveles);
         this.niveles.forEach(nivel -> nivel.agregarObservador(observadores));
         this.sesion = new SesionDeNivel(niveles.get(0));
@@ -39,6 +49,16 @@ public class Partida {
 
     public int usosDeDeshacer() {
         return sesion.usosDeDeshacer();
+    }
+
+    /** Context del Strategy: arma las estadísticas del nivel y delega el cálculo del puntaje. */
+    public ResumenDeNivel resumenDelNivel() {
+        if (estado == EstadoPartida.JUGANDO) {
+            throw new IllegalStateException("El nivel todavía no está completado");
+        }
+        EstadisticasDeNivel estadisticas = new EstadisticasDeNivel(
+                nivelActual().movimientos(), nivelActual().empujes(), sesion.usosDeDeshacer());
+        return new ResumenDeNivel(estadisticas, estrategiaDePuntaje.calcular(estadisticas));
     }
 
     public boolean mover(Direccion direccion) {
