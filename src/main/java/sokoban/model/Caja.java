@@ -16,6 +16,12 @@ public abstract class Caja {
         this.posicion = nueva;
     }
 
+    /** Cada tipo de caja captura el estado que le pertenece (posición y, si la hay, su resistencia). */
+    EstadoCaja guardarEstado() {
+        Posicion guardada = posicion;
+        return () -> posicion = guardada;
+    }
+
     /** Punto de variación: qué le pasa a cada tipo de caja cuando el jugador la empuja. */
     public abstract void alSerEmpujada();
 

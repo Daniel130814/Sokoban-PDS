@@ -76,6 +76,42 @@ class PartidaTest {
     }
 
     @Test
+    void sePuedeDeshacerYReiniciarMientrasSeJuega() {
+        Partida partida = new Partida(List.of(CARGADOR.cargar(List.of("#######", "#@  $.#", "#######"))));
+        Posicion inicio = partida.nivelActual().jugador().posicion();
+
+        assertTrue(partida.mover(Direccion.DERECHA));
+        assertTrue(partida.deshacer());
+        assertEquals(inicio, partida.nivelActual().jugador().posicion());
+        assertEquals(1, partida.usosDeDeshacer());
+
+        partida.reiniciarNivel();
+        assertEquals(0, partida.usosDeDeshacer());
+        assertEquals(0, partida.nivelActual().movimientos());
+    }
+
+    @Test
+    void conElNivelCompletadoNoSePuedeDeshacerNiReiniciar() {
+        Partida partida = partidaDeDosNiveles();
+        partida.mover(Direccion.DERECHA);
+
+        assertFalse(partida.deshacer());
+        partida.reiniciarNivel();
+
+        assertEquals(EstadoPartida.NIVEL_COMPLETADO, partida.estado());
+        assertTrue(partida.nivelActual().estaResuelto());
+    }
+
+    @Test
+    void alAvanzarElNuevoNivelEmpiezaConHistorialVacio() {
+        Partida partida = partidaDeDosNiveles();
+        partida.mover(Direccion.DERECHA);
+        partida.avanzarDeNivel();
+
+        assertFalse(partida.deshacer());
+    }
+
+    @Test
     void noSePuedeAvanzarSiElNivelNoEstaCompletado() {
         Partida partida = partidaDeDosNiveles();
 

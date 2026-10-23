@@ -23,6 +23,16 @@ public class CajaFragil extends Caja {
     }
 
     @Override
+    EstadoCaja guardarEstado() {
+        EstadoCaja base = super.guardarEstado();
+        int guardada = resistencia;
+        return () -> {
+            base.restaurar();
+            resistencia = guardada;
+        };
+    }
+
+    @Override
     public void alSerEmpujada() {
         resistencia--;
     }

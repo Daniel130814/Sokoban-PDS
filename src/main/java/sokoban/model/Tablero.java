@@ -25,6 +25,16 @@ public class Tablero {
         return celdas[posicion.fila()][posicion.columna()];
     }
 
+    TipoCelda[][] copiarCeldas() {
+        return copiar(celdas);
+    }
+
+    void restaurarCeldas(TipoCelda[][] guardadas) {
+        for (int fila = 0; fila < celdas.length; fila++) {
+            celdas[fila] = guardadas[fila].clone();
+        }
+    }
+
     public int cantidadDeDestinos() {
         int destinos = 0;
         for (TipoCelda[] fila : celdas) {

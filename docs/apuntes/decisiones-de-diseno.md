@@ -11,6 +11,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-005: Estados de la partida con un enum (State GoF descartado por ahora)
 - DD-006: Terreno resbaladizo con Strategy
 - DD-007: Cajas frágil y llave; cerrojo y muros con Observer (State descartado)
+- DD-008: Deshacer y reiniciar con Memento
 
 ---
 
@@ -362,6 +363,59 @@ Una puerta de otro tipo (por ejemplo, un muro que se abre y suena) es un nuevo `
 
 ---
 
+## DD-008: Deshacer y reiniciar con Memento
+
+- **Fecha:** 2026-10-23
+- **Estado:** Propuesta
+- **Patrón / principio:** Memento (GoF); SRP; encapsulamiento
+- **Requisito relacionado:** Deshacer movimientos: últimos 15, cada undo retrocede 5, máximo 3 usos consecutivos; reiniciar nivel (requisito no confirmado)
+
+### 1. Problema y contexto
+Hay que volver el nivel a un estado anterior. Lo que cambia durante el juego es mucho y variado: posición del jugador, cajas (con la resistencia de las frágiles y las cajas rotas), celdas del tablero (muros abiertos), cerrojos activos y contadores. La forma de guardar ese estado no debe filtrarse a la vista ni al controlador.
+
+Reglas provisorias para las ambigüedades abiertas:
+- "Un movimiento" es cada paso del jugador que se concreta, con o sin empuje (un intento bloqueado no cuenta ni se guarda).
+- El historial guarda los últimos 15 estados; cada undo retira hasta 5; si hay menos de 5, retrocede lo que haya; sin historial no hace nada.
+- "Consecutivos" significa sin un movimiento intermedio: mover reinicia la cuenta de usos consecutivos.
+- El undo restaura también los contadores (movimientos y empujes), la resistencia y las cajas rotas, y los muros (que se vuelven a cerrar). El número de usos de undo no se restaura: se acumula por nivel y lo usará el puntaje.
+- Reiniciar vuelve al estado inicial, vacía el historial y pone en cero los usos. Ni undo ni reinicio se permiten con el nivel completado.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| Memento: `EstadoNivel` guardado en `HistorialDeEstados` | Restaura el estado completo sin que cada acción sepa revertirse; encapsula el estado | Consume memoria por snapshot; hay que cuidar las copias | (elegida) |
+| Command con `deshacer()` por jugada | Granularidad por acción; sirve para replay | Revertir deslizamientos, roturas y muros uno por uno es propenso a errores | Mayor riesgo de bugs con efectos en cadena |
+| Copiar el nivel entero sin patrón | Rápido | El historial conoce la estructura interna del nivel (rompe encapsulamiento) | Viola SRP y encapsulamiento |
+
+### 3. Decisión
+`Nivel` es el Originator: crea un `EstadoNivel` (Memento) con `guardarEstado()` y se restaura con `restaurar()`. `EstadoNivel` es inmutable y solo `Nivel` lee su contenido. `HistorialDeEstados` es el Caretaker: guarda hasta 15 y entrega el estado que corresponde, sin mirar adentro. `SesionDeNivel` aplica la política (5 pasos, 3 usos consecutivos) y el reinicio, que reutiliza el mismo mecanismo con el estado inicial. Cada caja captura su propio estado (`Caja.guardarEstado()`), con lo que `CajaFragil` agrega su resistencia sin que `Nivel` conozca el tipo.
+
+### 4. Principios que favorece
+- **Encapsulamiento:** quien guarda los estados no sabe qué contienen.
+- **SRP:** `Nivel` juega, `HistorialDeEstados` almacena, `SesionDeNivel` aplica las reglas del undo, `Partida` secuencia niveles.
+- **OCP / Polimorfismo:** una caja con estado nuevo solo sobrescribe `guardarEstado()`.
+
+### 5. Consecuencias y costos
+Cada movimiento guarda una copia de las celdas del tablero (pequeñas hoy; aceptable para 15 estados). Riesgo principal: copias superficiales. Se mitigó copiando las celdas al guardar y al restaurar, y con tests que modifican el estado vivo y restauran dos veces el mismo snapshot. Las cajas conservan su identidad (se restauran los mismos objetos), así que la vista no debe guardar referencias a la lista de cajas, sino consultar el nivel. El constructor de `EstadoNivel` tiene 8 parámetros (lo marca el escáner); se acepta porque es un contenedor de datos de construcción interna y no un punto de extensión. `Partida` recibe niveles mutables y reinicia con el estado inicial, lo que resuelve el costo anotado en DD-005. `EstadoCaja` usa lambdas para capturar el estado; es una forma compacta de memento, pero menos explícita al mostrarla en el diagrama de clases.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Originator | `Nivel` | Implementada |
+| Memento | `EstadoNivel`, `EstadoCaja` | Implementada |
+| Caretaker | `HistorialDeEstados` | Implementada |
+| Política de undo y reinicio | `SesionDeNivel` | Implementada |
+| Uso desde el juego | `Partida.deshacer()`, `reiniciarNivel()` | Implementada |
+
+### 7. Cómo se extiende
+Guardar y cargar partida (funcionalidad adicional posible) se apoya en `EstadoNivel`: hay que serializarlo y restaurarlo con `Nivel.restaurar`. Un replay se podría construir sobre el mismo historial o sumando Command.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Memento y no Command para el undo?
+**Respuesta breve:** El requisito pide volver a un estado anterior, y con deslizamientos, cajas que se rompen y muros que se abren, revertir acción por acción es propenso a errores. Con Memento guardamos el estado completo y lo restauramos; el historial es una clase aparte que ni siquiera sabe qué hay dentro de cada estado.
+
+---
+
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.
 - ¿Qué es "un movimiento": cada paso del jugador o solo los empujes?
@@ -386,3 +440,4 @@ Una puerta de otro tipo (por ejemplo, un muro que se abre y suena) es un nuevo `
 | DD-005 | Evaluación State vs. enum, `Partida`, `Nivel.estaResuelto()` y tests | completar |
 | DD-006 | Borrador de la entrada, estrategias de movimiento, hielo y tests | completar |
 | DD-007 | Borrador de la entrada, cajas frágil/llave, Observer cerrojo–muro, cargador y tests | completar |
+| DD-008 | Borrador de la entrada, Memento, historial, sesión de nivel y tests | completar |

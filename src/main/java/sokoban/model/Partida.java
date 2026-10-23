@@ -8,6 +8,7 @@ public class Partida {
 
     private final List<Nivel> niveles;
     private int indiceActual;
+    private SesionDeNivel sesion;
     private EstadoPartida estado = EstadoPartida.JUGANDO;
 
     public Partida(List<Nivel> niveles) {
@@ -15,6 +16,7 @@ public class Partida {
             throw new IllegalArgumentException("Una partida necesita al menos un nivel");
         }
         this.niveles = List.copyOf(niveles);
+        this.sesion = new SesionDeNivel(niveles.get(0));
     }
 
     public EstadoPartida estado() {
@@ -22,22 +24,36 @@ public class Partida {
     }
 
     public Nivel nivelActual() {
-        return niveles.get(indiceActual);
+        return sesion.nivel();
     }
 
     public int numeroDeNivel() {
         return indiceActual + 1;
     }
 
+    public int usosDeDeshacer() {
+        return sesion.usosDeDeshacer();
+    }
+
     public boolean mover(Direccion direccion) {
         if (estado != EstadoPartida.JUGANDO) {
             return false;
         }
-        boolean seMovio = nivelActual().moverJugador(direccion);
+        boolean seMovio = sesion.mover(direccion);
         if (seMovio && nivelActual().estaResuelto()) {
             estado = EstadoPartida.NIVEL_COMPLETADO;
         }
         return seMovio;
+    }
+
+    public boolean deshacer() {
+        return estado == EstadoPartida.JUGANDO && sesion.deshacer();
+    }
+
+    public void reiniciarNivel() {
+        if (estado == EstadoPartida.JUGANDO) {
+            sesion.reiniciar();
+        }
     }
 
     public void avanzarDeNivel() {
@@ -46,6 +62,7 @@ public class Partida {
         }
         if (indiceActual + 1 < niveles.size()) {
             indiceActual++;
+            sesion = new SesionDeNivel(niveles.get(indiceActual));
             estado = EstadoPartida.JUGANDO;
         } else {
             estado = EstadoPartida.JUEGO_TERMINADO;

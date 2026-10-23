@@ -15,6 +15,8 @@ public class Nivel {
     private final Jugador jugador;
     private final List<Caja> cajas;
     private final Map<Posicion, Cerrojo> cerrojos = new HashMap<>();
+    private int movimientos;
+    private int empujes;
 
     public Nivel(Tablero tablero, Jugador jugador, List<Caja> cajas) {
         this(tablero, jugador, cajas, List.of());
@@ -55,6 +57,34 @@ public class Nivel {
         return cajas.size() < tablero.cantidadDeDestinos();
     }
 
+    public int movimientos() {
+        return movimientos;
+    }
+
+    public int empujes() {
+        return empujes;
+    }
+
+    /** Originator del Memento: captura todo lo que cambia durante el juego. */
+    public EstadoNivel guardarEstado() {
+        Map<Cerrojo, Boolean> activos = new HashMap<>();
+        cerrojos.values().forEach(cerrojo -> activos.put(cerrojo, cerrojo.estaActivo()));
+        return new EstadoNivel(jugador.posicion(), cajas,
+                cajas.stream().map(Caja::guardarEstado).toList(),
+                tablero.copiarCeldas(), activos, movimientos, empujes);
+    }
+
+    public void restaurar(EstadoNivel estado) {
+        jugador.irA(estado.jugador());
+        cajas.clear();
+        cajas.addAll(estado.cajas());
+        estado.estadosDeCajas().forEach(EstadoCaja::restaurar);
+        tablero.restaurarCeldas(estado.celdas());
+        estado.cerrojosActivos().forEach(Cerrojo::restaurarActivo);
+        movimientos = estado.movimientos();
+        empujes = estado.empujes();
+    }
+
     public boolean moverJugador(Direccion direccion) {
         Posicion destino = jugador.posicion().desplazar(direccion);
         if (!tablero.esTransitable(destino)) {
@@ -65,6 +95,10 @@ public class Nivel {
             return false;
         }
         jugador.irA(destino);
+        movimientos++;
+        if (enDestino.isPresent()) {
+            empujes++;
+        }
         return true;
     }
 

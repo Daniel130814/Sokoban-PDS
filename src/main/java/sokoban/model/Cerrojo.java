@@ -28,6 +28,11 @@ public class Cerrojo {
         return activo;
     }
 
+    /** Solo para restaurar un estado guardado: no notifica a los observadores. */
+    void restaurarActivo(boolean activo) {
+        this.activo = activo;
+    }
+
     public void agregarObservador(ObservadorDeCerrojo observador) {
         observadores.add(observador);
     }
