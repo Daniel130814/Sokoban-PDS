@@ -17,6 +17,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-011: Puntaje con Strategy
 - DD-012: Guardar y cargar partida con Command (registro de acciones)
 - DD-013: Logros con Observer y Strategy
+- DD-014: Tema visual con FlatLaf y pantallas propias (solo capa de vista)
 
 ---
 
@@ -663,6 +664,52 @@ Un logro nuevo ("Cinco niveles sin deshacer") es otra línea en `CatalogoDeLogro
 
 ---
 
+## DD-014: Tema visual con FlatLaf y pantallas propias (solo capa de vista)
+
+- **Fecha:** 2026-10-28
+- **Estado:** Propuesta
+- **Patrón / principio:** Sin patrón nuevo; Observer (DD-009) y Flyweight (DD-010) reutilizados; SRP; MVC
+- **Requisito relacionado:** Interfaz Swing con HUD (requisito no confirmado); la estética no se evalúa
+
+### 1. Problema y contexto
+La interfaz usaba el aspecto por defecto de Swing y diálogos `JOptionPane`. Se quiere una presentación coherente con el tema espacial sin que el cambio llegue a las reglas del juego.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| FlatLaf sobre Swing + dibujo propio | Mantiene Swing (DD-001/DD-009), una dependencia chica, el cambio queda en `view` | Dibujo manual del HUD | (elegida) |
+| JavaFX | Gráficos y animación más ricos, CSS | Reescribe toda la vista y las pruebas, agrega módulos y plugin de build, y deja dos toolkits de UI en transición | Costo desproporcionado; la estética no se evalúa y Swing es el supuesto del TP |
+| Look and Feel por defecto | Sin cambios | Aspecto desentonado | No cumple el objetivo visual |
+
+### 3. Decisión
+`Main` instala `FlatDarkLaf`. `PanelHud` se dibuja en `paintComponent`; los fondos e íconos salen de `RepositorioDeImagenes` y las fuentes de `RepositorioDeFuentes`. Menú, nivel completado y fin de juego son paneles en un `CardLayout` de `VentanaPrincipal`, que reacciona a los eventos existentes. El destello (`EfectoDeDestello`, con `javax.swing.Timer`) responde a `cajaSeRompio` y `cerrojoActivado`.
+
+### 4. Principios que favorece
+- **MVC / Low Coupling:** `model`, `controller`, `logros` y `persistencia` quedaron sin cambios; `ArquitecturaTest` sigue verificando que no importen Swing.
+- **SRP:** una clase por pantalla, efecto y repositorio.
+- **OCP:** un observador visual nuevo no toca el modelo.
+
+### 5. Consecuencias y costos
+Una dependencia nueva (FlatLaf). El destello cubre todo el tablero porque los eventos no llevan posición. El HUD muestra los deshaceres **usados**, no los restantes: el límite de usos consecutivos es privado en `SesionDeNivel` y mostrarlo exigiría un getter en el modelo. Tras el fin del juego solo se puede cargar una partida guardada o salir: una "nueva partida" requeriría un método en `ControladorDeJuego` para no desincronizar el registro de acciones. `RepositorioDeFuentes` repite la idea de cache de DD-010 sin ser un patrón nuevo. Los diálogos de Guardar/Cargar y "caja rota" siguen siendo `JOptionPane`.
+
+### 6. Dónde está en el código
+| Rol | Clase | Estado |
+|---|---|---|
+| Tema | `Main` (`FlatDarkLaf`) | Implementada |
+| Cache de fuentes | `RepositorioDeFuentes` | Implementada |
+| Fondo, HUD y botones | `PanelEspacial`, `PanelHud`, `BotonEspacial` | Implementada |
+| Pantallas | `PantallaDeMenu`, `PantallaNivelCompletado`, `PantallaFinDeJuego` (base `PantallaCentrada`) | Implementada |
+| Feedback visual | `EfectoDeDestello` en `PanelDeTablero` | Implementada |
+
+### 7. Cómo se extiende
+Otro tema es otra carpeta de recursos y otro `LookAndFeel`; una pantalla nueva es otro panel y una tarjeta en `VentanaPrincipal`.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué FlatLaf y no JavaFX?
+**Respuesta breve:** El cambio es de presentación y debe quedar en `view`; JavaFX obligaría a reescribir toda la vista y las pruebas sin aportar nada que el TP evalúe. Con FlatLaf el modelo y el controlador no se tocaron.
+
+---
+
 ## Decisiones del equipo sobre reglas ambiguas (2026-10-28)
 - **Deslizamiento:** una caja que se desliza sobre terreno resbaladizo se frena al llegar a un destino o a un cerrojo. Ya coincide con el código: `DESTINO` y `CERROJO` usan `MovimientoNormal` (DD-006).
 - **Muros:** si la caja llave sale del cerrojo, sus muros **se vuelven a cerrar**. Reemplaza la regla provisoria de DD-007 ("queda abierto"). **Pendiente de implementar.**
@@ -701,3 +748,4 @@ Un logro nuevo ("Cinco niveles sin deshacer") es otra línea en `CatalogoDeLogro
 | DD-011 | Borrador de la entrada, estrategia de puntaje, resumen de nivel y tests | completar |
 | DD-012 | Propuesta de las dos funcionalidades adicionales, borrador de la entrada, acciones, guardado y tests | completar |
 | DD-013 | Borrador de la entrada, logros, criterios y tests | completar |
+| DD-014 | Plan y borrador de la entrada, tema FlatLaf, HUD dibujado, pantallas, destello, repositorio de fuentes y tests de vista | completar |

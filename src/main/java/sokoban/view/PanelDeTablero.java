@@ -9,7 +9,6 @@ import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
-import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import sokoban.controller.ControladorDeJuego;
 import sokoban.model.Caja;
@@ -21,21 +20,23 @@ import sokoban.model.TipoCelda;
 import sokoban.model.enums.Direccion;
 
 /** Vista del tablero: dibuja el estado actual del nivel y reenvía las flechas al controlador. */
-public class PanelDeTablero extends JPanel implements ObservadorDeJuego {
+public class PanelDeTablero extends PanelEspacial implements ObservadorDeJuego {
 
     static final int TAMANIO_CELDA = 48;
-    private static final Color FONDO = new Color(34, 34, 40);
+    private static final Color DESTELLO_ROTURA = new Color(255, 70, 50);
+    private static final Color DESTELLO_COMPUERTA = new Color(60, 220, 255);
     private static final Color CAJA_EN_DESTINO = new Color(0, 200, 0, 90);
 
     private final Partida partida;
     private final RepositorioDeImagenes imagenes;
     private final SelectorDeSprites sprites = new SelectorDeSprites();
+    private final EfectoDeDestello destello = new EfectoDeDestello(this::repaint);
     private Direccion orientacion = Direccion.ARRIBA;
 
     public PanelDeTablero(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes) {
+        super(imagenes, "fondo_espacio");
         this.partida = partida;
         this.imagenes = imagenes;
-        setBackground(FONDO);
         setFocusable(true);
         asociarTecla(KeyEvent.VK_UP, Direccion.ARRIBA, controlador);
         asociarTecla(KeyEvent.VK_DOWN, Direccion.ABAJO, controlador);
@@ -50,6 +51,9 @@ public class PanelDeTablero extends JPanel implements ObservadorDeJuego {
         getActionMap().put(nombre, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent evento) {
+                if (!isShowing()) {
+                    return;
+                }
                 orientacion = direccion;
                 controlador.mover(direccion);
                 repaint();
@@ -67,6 +71,7 @@ public class PanelDeTablero extends JPanel implements ObservadorDeJuego {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         dibujar((Graphics2D) g);
+        destello.dibujar((Graphics2D) g, getWidth(), getHeight());
     }
 
     void dibujar(Graphics2D g) {
@@ -114,8 +119,13 @@ public class PanelDeTablero extends JPanel implements ObservadorDeJuego {
     }
 
     @Override
+    public void cajaSeRompio() {
+        destello.disparar(DESTELLO_ROTURA);
+    }
+
+    @Override
     public void cerrojoActivado() {
-        repaint();
+        destello.disparar(DESTELLO_COMPUERTA);
     }
 
     @Override

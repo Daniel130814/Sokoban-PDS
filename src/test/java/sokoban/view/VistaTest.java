@@ -1,10 +1,15 @@
 package sokoban.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -85,12 +90,55 @@ class VistaTest {
     @Test
     void elHudMuestraLosContadoresDelNivel() {
         Partida partida = partida("#######", "#@  $.#", "#######");
-        PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida), new Logros(partida, CatalogoDeLogros.estandar()));
+        PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
+                new Logros(partida, CatalogoDeLogros.estandar()), new RepositorioDeImagenes(),
+                new RepositorioDeFuentes());
         partida.agregarObservador(hud);
 
         partida.mover(Direccion.DERECHA);
 
         assertEquals("Nivel 1 | Movimientos: 1 | Empujes: 0", hud.textoDelNivel());
+    }
+
+    @Test
+    void elRepositorioDeFuentesCargaUnaVezYUsaRespaldoSiFalta() {
+        RepositorioDeFuentes fuentes = new RepositorioDeFuentes();
+
+        Font principal = fuentes.fuente("kenvector_future", 20f);
+        Font respaldo = fuentes.fuente("no-existe", 12f);
+
+        assertEquals(20f, principal.getSize2D());
+        assertEquals("KenVector Future", principal.getFamily());
+        assertNotNull(respaldo);
+        fuentes.fuente("kenvector_future", 30f);
+        assertEquals(2, fuentes.cantidadCargadas());
+    }
+
+    @Test
+    void elDestelloSeApagaDespuesDeSusCuadros() {
+        EfectoDeDestello destello = new EfectoDeDestello(() -> { });
+
+        destello.disparar(Color.RED);
+        assertTrue(destello.activo());
+        for (int i = 0; i < EfectoDeDestello.CUADROS; i++) {
+            destello.paso();
+        }
+
+        assertFalse(destello.activo());
+    }
+
+    @Test
+    void elTableroSeDestellaAlRomperseUnaCajaYAlActivarseUnCerrojo() {
+        Partida partida = partida("#######", "#@%  .#", "#######");
+        PanelDeTablero panel = new PanelDeTablero(partida, new ControladorDeJuego(partida),
+                new RepositorioDeImagenes());
+        panel.setSize(panel.getPreferredSize());
+        BufferedImage normal = captura(panel);
+
+        panel.cajaSeRompio();
+        BufferedImage conDestello = captura(panel);
+
+        assertNotEquals(normal.getRGB(2, 2), conDestello.getRGB(2, 2));
     }
 
     private static BufferedImage captura(PanelDeTablero panel) {

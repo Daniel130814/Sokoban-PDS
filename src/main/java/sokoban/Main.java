@@ -1,5 +1,6 @@
 package sokoban;
 
+import com.formdev.flatlaf.FlatDarkLaf;
 import java.util.List;
 import javax.swing.SwingUtilities;
 import sokoban.audio.ReproductorJavaSound;
@@ -13,6 +14,7 @@ import sokoban.model.Partida;
 import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
 import sokoban.model.puntaje.PuntajePorEficiencia;
+import sokoban.view.RepositorioDeFuentes;
 import sokoban.view.RepositorioDeImagenes;
 import sokoban.view.VentanaPrincipal;
 
@@ -38,7 +40,8 @@ public class Main {
         Logros logros = new Logros(partida, CatalogoDeLogros.estandar());
         partida.agregarObservador(logros);
         ControladorDeJuego controlador = new ControladorDeJuego(partida);
-        SwingUtilities.invokeLater(() ->
-                new VentanaPrincipal(partida, controlador, new RepositorioDeImagenes(), logros).setVisible(true));
+        FlatDarkLaf.setup();
+        SwingUtilities.invokeLater(() -> new VentanaPrincipal(partida, controlador, new RepositorioDeImagenes(),
+                new RepositorioDeFuentes(), logros).setVisible(true));
     }
 }
