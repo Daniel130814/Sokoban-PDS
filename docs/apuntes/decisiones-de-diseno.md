@@ -43,7 +43,7 @@ Herramienta de build:
 | `javac` + JUnit manual | Sin configuración extra | Scripts y classpath manuales, frágil entre máquinas | Menos reproducible |
 
 ### 3. Decisión
-Organizamos el código en `sokoban.model`, `sokoban.view`, `sokoban.controller` y `sokoban.util`, con la regla de que **`model` no importa `javax.swing`/`java.awt`**. Usamos Maven con Java 21 y JUnit 5.
+Organizamos el código en `sokoban.model`, `sokoban.view`, `sokoban.controller` y `sokoban.util`, con la regla de que **`model` no importa `javax.swing`/`java.awt`**. Usamos Maven con Java 17 y JUnit 5.
 
 ### 4. Principios que favorece
 - **SRP:** reglas, dibujo y entrada del usuario cambian por razones distintas y viven en paquetes distintos.
@@ -662,6 +662,11 @@ Un logro nuevo ("Cinco niveles sin deshacer") es otra línea en `CatalogoDeLogro
 **Respuesta breve:** `Logros` escucha los eventos que el modelo ya emite, así que el juego no sabe que existen. Cada logro lleva su propio criterio como una estrategia, y por eso un logro nuevo es una línea en el catálogo. Es un Strategy funcional con lambdas, y lo decimos así.
 
 ---
+
+## Decisiones del equipo sobre reglas ambiguas (2026-10-28)
+- **Deslizamiento:** una caja que se desliza sobre terreno resbaladizo se frena al llegar a un destino o a un cerrojo. Ya coincide con el código: `DESTINO` y `CERROJO` usan `MovimientoNormal` (DD-006).
+- **Muros:** si la caja llave sale del cerrojo, sus muros **se vuelven a cerrar**. Reemplaza la regla provisoria de DD-007 ("queda abierto"). **Pendiente de implementar.**
+- **Caja frágil rota:** el nivel se pierde o no según queden cajas suficientes para cubrir todas las bahías (destinos). Interpretación a confirmar por el equipo; hoy el cargador exige igual cantidad de cajas y destinos, así que cualquier rotura deja el nivel irresoluble. **Pendiente de confirmar e implementar.**
 
 ## Ambigüedades abiertas (a confirmar con el enunciado vigente / docente)
 - Uso de Swing como biblioteca gráfica.

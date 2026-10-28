@@ -27,11 +27,13 @@ public class SelectorDeSprites {
     }
 
     public String paraCaja(Caja caja) {
-        return switch (caja) {
-            case CajaFragil fragil -> "caja_fragil";
-            case CajaLlave llave -> "caja_llave";
-            default -> "caja";
-        };
+        if (caja instanceof CajaFragil) {
+            return "caja_fragil";
+        }
+        if (caja instanceof CajaLlave) {
+            return "caja_llave";
+        }
+        return "caja";
     }
 
     public String paraJugador() {

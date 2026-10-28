@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.geom.AffineTransform;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -29,6 +30,7 @@ public class PanelDeTablero extends JPanel implements ObservadorDeJuego {
     private final Partida partida;
     private final RepositorioDeImagenes imagenes;
     private final SelectorDeSprites sprites = new SelectorDeSprites();
+    private Direccion orientacion = Direccion.ARRIBA;
 
     public PanelDeTablero(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes) {
         this.partida = partida;
@@ -48,7 +50,9 @@ public class PanelDeTablero extends JPanel implements ObservadorDeJuego {
         getActionMap().put(nombre, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent evento) {
+                orientacion = direccion;
                 controlador.mover(direccion);
+                repaint();
             }
         });
     }
@@ -81,7 +85,22 @@ public class PanelDeTablero extends JPanel implements ObservadorDeJuego {
                         TAMANIO_CELDA, TAMANIO_CELDA);
             }
         }
-        dibujarSprite(g, sprites.paraJugador(), partida.nivelActual().jugador().posicion());
+        dibujarJugador(g, partida.nivelActual().jugador().posicion());
+    }
+
+    /** El sprite del astronauta mira hacia arriba; se rota según la última dirección pedida. */
+    private void dibujarJugador(Graphics2D g, Posicion posicion) {
+        double grados = switch (orientacion) {
+            case ARRIBA -> 0;
+            case DERECHA -> 90;
+            case ABAJO -> 180;
+            case IZQUIERDA -> 270;
+        };
+        AffineTransform original = g.getTransform();
+        g.rotate(Math.toRadians(grados), (posicion.columna() + 0.5) * TAMANIO_CELDA,
+                (posicion.fila() + 0.5) * TAMANIO_CELDA);
+        dibujarSprite(g, sprites.paraJugador(), posicion);
+        g.setTransform(original);
     }
 
     private void dibujarSprite(Graphics2D g, String nombre, Posicion posicion) {

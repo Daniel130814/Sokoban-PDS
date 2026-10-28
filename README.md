@@ -18,7 +18,7 @@ Grupo **Los Desinformaticos**.
 
 ## Cómo ejecutar
 
-Requisitos: JDK 21. No hace falta instalar Maven (se usa el Maven Wrapper incluido).
+Requisitos: JDK 17 o superior. No hace falta instalar Maven (se usa el Maven Wrapper incluido).
 
 ```bash
 ./mvnw test
