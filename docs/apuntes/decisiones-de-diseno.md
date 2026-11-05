@@ -18,7 +18,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-012: Guardar y cargar partida con Command (registro de acciones)
 - DD-013: Logros con Observer y Strategy
 - DD-014: Tema visual con FlatLaf y pantallas propias (solo capa de vista)
-
+- DD-015: Cronómetro por nivel con Observer
 ---
 
 ## DD-001: Separación en capas (MVC) y herramienta de build (Maven)
@@ -709,7 +709,50 @@ Otro tema es otra carpeta de recursos y otro `LookAndFeel`; una pantalla nueva e
 **Respuesta breve:** El cambio es de presentación y debe quedar en `view`; JavaFX obligaría a reescribir toda la vista y las pruebas sin aportar nada que el TP evalúe. Con FlatLaf el modelo y el controlador no se tocaron.
 
 ---
+## DD-015: Cronómetro por nivel con Observer
 
+- **Fecha:** 2026-11-04
+- **Estado:** Propuesta
+- **Patrón / principio:** Observer (GoF); OCP; Low Coupling. Funcionalidad adicional extra
+- **Requisito relacionado:** Ninguno obligatorio; refuerza el resumen de desempeño por nivel
+
+### 1. Problema y contexto
+Se quiere medir cuánto tarda el jugador en resolver cada nivel y mostrarlo en el resumen, sin que el modelo sepa nada del tiempo. Lo que cambia es qué se mide y dónde se muestra; lo estable es el flujo de eventos de `ObservadorDeJuego`.
+
+Reglas adoptadas: el tiempo arranca con el primer movimiento del nivel, se detiene en `nivelCompletado` y vuelve a cero en `nivelCambiado` (avanzar de nivel o cargar una partida).
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| `Cronometro` como `ObservadorDeJuego` | El modelo no cambia; se registra en `Main` como `Logros` y `SonidosDelJuego`; reloj inyectable para probar | Repite Observer | (elegida) |
+| Campo de tiempo dentro de `Nivel` o `Partida` | Sin clases nuevas | Mezcla reglas del juego con medición; el modelo pasa a depender del reloj del sistema | Viola SRP |
+| Que la vista mida el tiempo con un `Timer` | Simple | La lógica de medición queda en `view`, sin pruebas y atada a Swing | Rompe MVC |
+
+### 3. Decisión
+`Cronometro` implementa `ObservadorDeJuego` y usa los eventos que el modelo ya emite. El reloj es un `LongSupplier` inyectado, así que las pruebas controlan el tiempo sin dormir hilos. `VentanaPrincipal` lo consulta para mostrar el tiempo en la pantalla de nivel completado.
+
+### 4. Principios que favorece
+- **OCP:** una función nueva sin modificar `Nivel`, `Partida` ni `DifusorDeEventos`.
+- **Low Coupling:** el modelo no conoce el cronómetro.
+- **SRP:** medir el tiempo es una responsabilidad aparte.
+
+### 5. Consecuencias y costos
+Es el tercer uso de Observer: es coherente pero repite el patrón, y la variedad la aportan otras decisiones. `reiniciarNivel` no reinicia el tiempo, porque emite `estadoRestaurado`, el mismo evento que deshacer, y el cronómetro no puede distinguirlos. El tiempo no entra en el puntaje ni en el archivo de guardado. El HUD todavía no lo muestra en vivo (haría falta un `Timer` de Swing).
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Observer (interfaz) | `ObservadorDeJuego` | Implementada |
+| Observer concreto | `Cronometro` | Implementada |
+| Subject | `DifusorDeEventos` | Implementada |
+| Vista del dato | `PantallaNivelCompletado` | Implementada |
+
+### 7. Cómo se extiende
+Un logro "Completá un nivel en menos de 30 s" necesita pasar el tiempo a `EstadisticasDeJuego`. Mostrarlo en vivo en el HUD agrega un `Timer` en `view` que repinte y consulte `Cronometro.comoTexto()`.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué un Observer para el cronómetro y no un campo de tiempo en `Nivel`?
+**Respuesta breve:** El modelo ya avisa cuándo se mueve el jugador y cuándo se completa un nivel, así que el cronómetro solo escucha esos eventos. Si el tiempo viviera en `Nivel`, las reglas del juego dependerían del reloj. Reconocemos que repite Observer: lo elegimos por su bajo costo, no por variedad.
 ## Decisiones del equipo sobre reglas ambiguas (2026-10-28)
 - **Deslizamiento:** una caja que se desliza sobre terreno resbaladizo se frena al llegar a un destino o a un cerrojo. Ya coincide con el código: `DESTINO` y `CERROJO` usan `MovimientoNormal` (DD-006).
 - **Muros:** si la caja llave sale del cerrojo, sus muros **se vuelven a cerrar**. Reemplaza la regla provisoria de DD-007 ("queda abierto"). **Pendiente de implementar.**
@@ -749,3 +792,4 @@ Otro tema es otra carpeta de recursos y otro `LookAndFeel`; una pantalla nueva e
 | DD-012 | Propuesta de las dos funcionalidades adicionales, borrador de la entrada, acciones, guardado y tests | completar |
 | DD-013 | Borrador de la entrada, logros, criterios y tests | completar |
 | DD-014 | Plan y borrador de la entrada, tema FlatLaf, HUD dibujado, pantallas, destello, repositorio de fuentes y tests de vista | completar |
+| DD-015 | Borrador de la entrada, `Cronometro` y tests | completar |

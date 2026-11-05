@@ -11,6 +11,7 @@ import sokoban.controller.ControladorDeJuego;
 import sokoban.logros.Logros;
 import sokoban.model.ObservadorDeJuego;
 import sokoban.model.Partida;
+import sokoban.tiempo.Cronometro;
 
 /**
  * Ventana con una tarjeta por pantalla (menú, juego, nivel completado y fin). Cambia de tarjeta
@@ -29,12 +30,14 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     private final JPanel contenido = new JPanel(tarjetas);
     private final PanelDeTablero tablero;
     private final PantallaNivelCompletado pantallaCompletado;
+    private final Cronometro cronometro;
 
     public VentanaPrincipal(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes,
-            RepositorioDeFuentes fuentes, Logros logros) {
+                            RepositorioDeFuentes fuentes, Logros logros, Cronometro cronometro) {
         super("Sokoban - Los Desinformaticos");
         this.partida = partida;
         this.controlador = controlador;
+        this.cronometro = cronometro;
 
         tablero = new PanelDeTablero(partida, controlador, imagenes);
         PanelHud hud = new PanelHud(partida, controlador, logros, imagenes, fuentes);
@@ -82,7 +85,7 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     @Override
     public void nivelCompletado() {
         SwingUtilities.invokeLater(() -> {
-            pantallaCompletado.mostrar(partida.resumenDelNivel());
+            pantallaCompletado.mostrar(partida.resumenDelNivel(), cronometro.comoTexto());
             mostrar(COMPLETADO);
         });
     }

@@ -14,6 +14,7 @@ import sokoban.model.Partida;
 import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
 import sokoban.model.puntaje.PuntajePorEficiencia;
+import sokoban.tiempo.Cronometro;
 import sokoban.view.RepositorioDeFuentes;
 import sokoban.view.RepositorioDeImagenes;
 import sokoban.view.VentanaPrincipal;
@@ -24,7 +25,11 @@ public class Main {
             "/levels/nivel1.txt",
             "/levels/nivel2.txt",
             "/levels/nivel3.txt",
-            "/levels/nivel4.txt");
+            "/levels/nivel4.txt",
+            "/levels/nivel5.txt",
+            "/levels/nivel6.txt",
+            "/levels/nivel7.txt",
+            "/levels/nivel8.txt");
 
     public static void main(String[] args) {
         Partida partida;
@@ -41,7 +46,12 @@ public class Main {
         partida.agregarObservador(logros);
         ControladorDeJuego controlador = new ControladorDeJuego(partida);
         FlatDarkLaf.setup();
+        Cronometro cronometro = new Cronometro();
+        partida.agregarObservador(cronometro);
         SwingUtilities.invokeLater(() -> new VentanaPrincipal(partida, controlador, new RepositorioDeImagenes(),
-                new RepositorioDeFuentes(), logros).setVisible(true));
+                new RepositorioDeFuentes(), logros, cronometro).setVisible(true));
+
+
     }
+
 }

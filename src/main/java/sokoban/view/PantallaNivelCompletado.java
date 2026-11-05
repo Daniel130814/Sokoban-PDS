@@ -11,10 +11,11 @@ public class PantallaNivelCompletado extends PantallaCentrada {
         agregarBoton("Continuar", continuar);
     }
 
-    public void mostrar(ResumenDeNivel resumen) {
+    public void mostrar(ResumenDeNivel resumen, String tiempo) {
         mostrarTexto("Movimientos: " + resumen.estadisticas().movimientos()
                 + "\nEmpujes: " + resumen.estadisticas().empujes()
                 + "\nDeshacer usado: " + resumen.estadisticas().usosDeDeshacer() + " veces"
+                + "\nTiempo: " + tiempo
                 + "\n\nPuntaje final: " + resumen.puntaje());
     }
 }
