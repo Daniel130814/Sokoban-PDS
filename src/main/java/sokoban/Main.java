@@ -15,6 +15,7 @@ import sokoban.model.Partida;
 import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
 import sokoban.model.puntaje.PuntajePorEficiencia;
+import sokoban.tiempo.Cronometro;
 import sokoban.view.FichaDeNivel;
 import sokoban.view.RepositorioDeFuentes;
 import sokoban.view.RepositorioDeImagenes;
@@ -31,7 +32,10 @@ public class Main {
             new DatosDeNivel("/levels/nivel2.txt", "Tutorial 2", "Hielo: la caja se desliza"),
             new DatosDeNivel("/levels/nivel3.txt", "Tutorial 3", "Caja llave, cerrojo y muro"),
             new DatosDeNivel("/levels/nivel4.txt", "Tutorial 4", "Caja frágil: se rompe al empujarla"),
-            new DatosDeNivel("/levels/nivel5.txt", "Banco de pruebas", "Todos los tipos de caja"));
+            new DatosDeNivel("/levels/nivel5.txt", "Nivel 5", "Tres cajas, tres destinos"),
+            new DatosDeNivel("/levels/nivel6.txt", "Nivel 6", "Tres cajas en fila"),
+            new DatosDeNivel("/levels/nivel7.txt", "Nivel 7", "Dos pasillos, tres cajas"),
+            new DatosDeNivel("/levels/nivel8.txt", "Nivel 8", "Ocho cajas: el desafío final"));
 
     public static void main(String[] args) {
         Partida partida;
@@ -53,7 +57,9 @@ public class Main {
         partida.agregarObservador(logros);
         ControladorDeJuego controlador = new ControladorDeJuego(partida);
         FlatDarkLaf.setup();
+        Cronometro cronometro = new Cronometro();
+        partida.agregarObservador(cronometro);
         SwingUtilities.invokeLater(() -> new VentanaPrincipal(partida, controlador, new RepositorioDeImagenes(),
-                new RepositorioDeFuentes(), logros, fichas).setVisible(true));
+                new RepositorioDeFuentes(), logros, fichas, cronometro).setVisible(true));
     }
 }

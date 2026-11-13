@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 /** Hace cumplir DD-001: las capas que no son interfaz no importan Swing, AWT ni javax.sound. */
 class ArquitecturaTest {
 
-    private static final List<String> CAPAS_SIN_INTERFAZ = List.of("model", "controller", "logros", "persistencia");
+    private static final List<String> CAPAS_SIN_INTERFAZ = List.of("model", "controller", "logros", "persistencia","tiempo");
     private static final List<String> PROHIBIDOS = List.of("javax.swing", "java.awt", "javax.sound");
 
     @Test
