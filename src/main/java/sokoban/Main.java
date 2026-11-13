@@ -1,6 +1,7 @@
 package sokoban;
 
 import com.formdev.flatlaf.FlatDarkLaf;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.SwingUtilities;
 import sokoban.audio.ReproductorJavaSound;
@@ -14,24 +15,35 @@ import sokoban.model.Partida;
 import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
 import sokoban.model.puntaje.PuntajePorEficiencia;
+import sokoban.view.FichaDeNivel;
 import sokoban.view.RepositorioDeFuentes;
 import sokoban.view.RepositorioDeImagenes;
 import sokoban.view.VentanaPrincipal;
 
 public class Main {
 
-    private static final List<String> NIVELES = List.of(
-            "/levels/nivel1.txt",
-            "/levels/nivel2.txt",
-            "/levels/nivel3.txt",
-            "/levels/nivel4.txt");
+    /** Recurso, título y detalle de cada nivel; los primeros cuatro son el tutorial. */
+    private record DatosDeNivel(String ruta, String titulo, String detalle) {
+    }
+
+    private static final List<DatosDeNivel> NIVELES = List.of(
+            new DatosDeNivel("/levels/nivel1.txt", "Tutorial 1", "Empujá la caja hasta el destino"),
+            new DatosDeNivel("/levels/nivel2.txt", "Tutorial 2", "Hielo: la caja se desliza"),
+            new DatosDeNivel("/levels/nivel3.txt", "Tutorial 3", "Caja llave, cerrojo y muro"),
+            new DatosDeNivel("/levels/nivel4.txt", "Tutorial 4", "Caja frágil: se rompe al empujarla"),
+            new DatosDeNivel("/levels/nivel5.txt", "Banco de pruebas", "Todos los tipos de caja"));
 
     public static void main(String[] args) {
         Partida partida;
+        List<FichaDeNivel> fichas = new ArrayList<>();
         try {
             CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
-            List<Nivel> niveles = NIVELES.stream().map(cargador::cargarDesdeRecurso).toList();
+            List<Nivel> niveles = NIVELES.stream().map(datos -> cargador.cargarDesdeRecurso(datos.ruta())).toList();
             partida = new Partida(niveles, new PuntajePorEficiencia());
+            // Copias sin jugar, solo para mostrar el catálogo de niveles.
+            for (DatosDeNivel datos : NIVELES) {
+                fichas.add(new FichaDeNivel(datos.titulo(), datos.detalle(), cargador.cargarDesdeRecurso(datos.ruta())));
+            }
         } catch (NivelInvalidoException e) {
             System.err.println("No se pudieron cargar los niveles: " + e.getMessage());
             return;
@@ -42,6 +54,6 @@ public class Main {
         ControladorDeJuego controlador = new ControladorDeJuego(partida);
         FlatDarkLaf.setup();
         SwingUtilities.invokeLater(() -> new VentanaPrincipal(partida, controlador, new RepositorioDeImagenes(),
-                new RepositorioDeFuentes(), logros).setVisible(true));
+                new RepositorioDeFuentes(), logros, fichas).setVisible(true));
     }
 }

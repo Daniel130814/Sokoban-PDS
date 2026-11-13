@@ -31,6 +31,10 @@ public class Logros implements ObservadorDeJuego {
         return List.copyOf(desbloqueados);
     }
 
+    public List<Logro> catalogo() {
+        return catalogo;
+    }
+
     public int total() {
         return catalogo.size();
     }

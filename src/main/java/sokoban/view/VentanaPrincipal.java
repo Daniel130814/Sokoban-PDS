@@ -3,6 +3,7 @@ package sokoban.view;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.GridBagLayout;
+import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -22,6 +23,8 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     static final String JUEGO = "juego";
     static final String COMPLETADO = "completado";
     static final String FIN = "fin";
+    static final String LOGROS = "logros";
+    static final String NIVELES = "niveles";
 
     private final Partida partida;
     private final ControladorDeJuego controlador;
@@ -31,13 +34,13 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     private final PantallaNivelCompletado pantallaCompletado;
 
     public VentanaPrincipal(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes,
-            RepositorioDeFuentes fuentes, Logros logros) {
+            RepositorioDeFuentes fuentes, Logros logros, List<FichaDeNivel> fichas) {
         super("Sokoban - Los Desinformaticos");
         this.partida = partida;
         this.controlador = controlador;
 
         tablero = new PanelDeTablero(partida, controlador, imagenes);
-        PanelHud hud = new PanelHud(partida, controlador, logros, imagenes, fuentes);
+        PanelHud hud = new PanelHud(partida, controlador, logros, imagenes, fuentes, () -> mostrar(LOGROS));
         partida.agregarObservador(tablero);
         partida.agregarObservador(hud);
         partida.agregarObservador(this);
@@ -56,15 +59,25 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
             }
         };
         pantallaCompletado = new PantallaNivelCompletado(imagenes, fuentes, controlador::continuar);
-        contenido.add(new PantallaDeMenu(imagenes, fuentes, () -> mostrar(JUEGO), cargar, this::salir), MENU);
+        contenido.add(new PantallaDeMenu(imagenes, fuentes, () -> mostrar(JUEGO), () -> mostrar(NIVELES), cargar,
+                this::salir), MENU);
+        contenido.add(new PantallaDeNiveles(imagenes, fuentes, fichas, () -> mostrar(MENU)), NIVELES);
         contenido.add(juego, JUEGO);
+        contenido.add(new PantallaDeLogros(imagenes, fuentes, logros, () -> mostrar(JUEGO)), LOGROS);
         contenido.add(pantallaCompletado, COMPLETADO);
-        contenido.add(new PantallaFinDeJuego(imagenes, fuentes, cargar, this::salir), FIN);
+        contenido.add(new PantallaFinDeJuego(imagenes, fuentes, this::volverAlInicio, this::salir), FIN);
 
         setContentPane(contenido);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         pack();
         setLocationRelativeTo(null);
+        setExtendedState(MAXIMIZED_BOTH);
+    }
+
+    /** Empieza de nuevo desde el primer nivel y muestra el menú (el reinicio avisa nivelCambiado, que va al juego). */
+    private void volverAlInicio() {
+        controlador.nuevaPartida();
+        mostrar(MENU);
     }
 
     private void salir() {
@@ -104,7 +117,6 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
 
     @Override
     public void nivelCambiado() {
-        pack();
         mostrar(JUEGO);
     }
 

@@ -50,6 +50,12 @@ public class ControladorDeJuego {
         ejecutar(new Continuar());
     }
 
+    /** Vuelve al primer nivel con todo como al empezar y borra el registro de acciones. */
+    public void nuevaPartida() {
+        partida.reconstruir(nueva -> { });
+        registro.clear();
+    }
+
     public void guardar(Path ruta) throws IOException {
         guardado.guardar(registro, ruta);
     }

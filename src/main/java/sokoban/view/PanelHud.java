@@ -53,7 +53,7 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
     private String puntaje = "-";
 
     public PanelHud(Partida partida, ControladorDeJuego controlador, Logros logros,
-            RepositorioDeImagenes imagenes, RepositorioDeFuentes fuentes) {
+            RepositorioDeImagenes imagenes, RepositorioDeFuentes fuentes, Runnable verLogros) {
         super(new BorderLayout());
         this.partida = partida;
         this.controlador = controlador;
@@ -69,6 +69,7 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
         acciones.add(boton("Reiniciar", imagenes, fuentes, controlador::reiniciarNivel));
         acciones.add(boton("Guardar", imagenes, fuentes, this::guardar));
         acciones.add(boton("Cargar", imagenes, fuentes, this::cargar));
+        acciones.add(boton("Logros", imagenes, fuentes, verLogros));
         logrosObtenidos.setFont(fuentes.fuente("kenvector_future_thin", 12f));
         logrosObtenidos.setForeground(Color.WHITE);
         acciones.add(logrosObtenidos);

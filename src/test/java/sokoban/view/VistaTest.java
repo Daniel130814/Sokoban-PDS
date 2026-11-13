@@ -92,7 +92,7 @@ class VistaTest {
         Partida partida = partida("#######", "#@  $.#", "#######");
         PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
                 new Logros(partida, CatalogoDeLogros.estandar()), new RepositorioDeImagenes(),
-                new RepositorioDeFuentes());
+                new RepositorioDeFuentes(), () -> { });
         partida.agregarObservador(hud);
 
         partida.mover(Direccion.DERECHA);

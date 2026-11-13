@@ -31,6 +31,22 @@ class ControladorDeJuegoTest {
     }
 
     @Test
+    void unaNuevaPartidaDespuesDelFinalVuelveAlPrimerNivelSinJugadas() {
+        controlador.mover(Direccion.DERECHA);
+        controlador.mover(Direccion.DERECHA);
+        controlador.mover(Direccion.DERECHA);
+        controlador.continuar();
+        assertEquals(EstadoPartida.JUEGO_TERMINADO, partida.estado());
+
+        controlador.nuevaPartida();
+
+        assertEquals(EstadoPartida.JUGANDO, partida.estado());
+        assertEquals(1, partida.numeroDeNivel());
+        assertEquals(0, partida.nivelActual().movimientos());
+        assertEquals(new Posicion(1, 1), partida.nivelActual().jugador().posicion());
+    }
+
+    @Test
     void continuarSoloAvanzaConElNivelCompletado() {
         controlador.continuar();
 

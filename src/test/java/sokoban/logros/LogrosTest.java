@@ -32,6 +32,28 @@ class LogrosTest {
     }
 
     @Test
+    void elAvanceDeUnLogroPorContadorCrecePeroNoPasaLaMeta() {
+        Partida partida = partida("##########", "#@$     .#", "##########");
+        Logros logros = observar(partida);
+        Logro empujador = logros.catalogo().stream().filter(l -> l.nombre().equals("Empujador")).findFirst().orElseThrow();
+
+        assertEquals(0, empujador.avance(logros.estadisticas()));
+        partida.mover(Direccion.DERECHA);
+        partida.mover(Direccion.DERECHA);
+
+        assertEquals(2, empujador.avance(logros.estadisticas()));
+        assertEquals(20, empujador.meta());
+    }
+
+    @Test
+    void unLogroDeTodoONadaTieneAvanceCeroOUno() {
+        Logro logro = new Logro("x", "y", e -> e.empujes() >= 1);
+
+        assertEquals(1, logro.meta());
+        assertEquals(0, logro.avance(new EstadisticasDeJuego()));
+    }
+
+    @Test
     void alPrincipioNoHayLogrosDesbloqueados() {
         Logros logros = observar(partida("#####", "#@$.#", "#####"));
 
