@@ -10,6 +10,7 @@ import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
 import sokoban.model.enums.Direccion;
 import sokoban.model.enums.EstadoPartida;
+import sokoban.model.modo.ModoMovimientosLimitados;
 
 class ControladorDeJuegoTest {
 
@@ -44,6 +45,20 @@ class ControladorDeJuegoTest {
         assertEquals(1, partida.numeroDeNivel());
         assertEquals(0, partida.nivelActual().movimientos());
         assertEquals(new Posicion(1, 1), partida.nivelActual().jugador().posicion());
+    }
+
+    @Test
+    void elegirUnModoEmpiezaDeNuevoConSusReglasYSePuedeReintentarTrasFallar() {
+        controlador.mover(Direccion.DERECHA);
+
+        controlador.elegirModo(new ModoMovimientosLimitados(1));
+
+        assertEquals(0, partida.nivelActual().movimientos());
+        controlador.mover(Direccion.DERECHA);
+        assertEquals(EstadoPartida.NIVEL_FALLIDO, partida.estado());
+        controlador.reiniciarNivel();
+        assertEquals(EstadoPartida.JUGANDO, partida.estado());
+        assertEquals(0, partida.nivelActual().movimientos());
     }
 
     @Test
