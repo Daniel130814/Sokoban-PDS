@@ -153,10 +153,31 @@ class VistaTest {
     }
 
     @Test
+    void elHudMuestraElRelojSegunElModo() {
+        long[] ahora = {0};
+        sokoban.tiempo.Cronometro cronometro = new sokoban.tiempo.Cronometro(() -> ahora[0]);
+        Partida partida = new Partida(List.of(new CargadorDeNivel(new FabricaDeElementos())
+                .cargar(List.of("#######", "#@  $.#", "#######"))), new sokoban.model.puntaje.PuntajePorEficiencia(),
+                new sokoban.tiempo.ModoContrarreloj(cronometro, java.time.Duration.ofSeconds(60)));
+        partida.agregarObservador(cronometro);
+        PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
+                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), cronometro, () -> { });
+
+        assertEquals("Quedan 01:00", hud.textoDeTiempo());
+        ahora[0] = 1_000;
+        partida.mover(Direccion.DERECHA);
+        ahora[0] = 21_000;
+        assertEquals("Quedan 00:40", hud.textoDeTiempo());
+
+        partida.establecerModo(new sokoban.model.modo.ModoClasico());
+        assertEquals("Tiempo 00:20", hud.textoDeTiempo());
+    }
+
+    @Test
     void elHudMuestraLosContadoresDelNivel() {
         Partida partida = partida("#######", "#@  $.#", "#######");
         PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
-                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), () -> { });
+                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), new sokoban.tiempo.Cronometro(), () -> { });
         partida.agregarObservador(hud);
 
         partida.mover(Direccion.DERECHA);

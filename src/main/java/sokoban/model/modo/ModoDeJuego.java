@@ -1,5 +1,6 @@
 package sokoban.model.modo;
 
+import java.time.Duration;
 import sokoban.model.Nivel;
 import sokoban.model.enums.EstadoPartida;
 import sokoban.model.puntaje.EstadisticasDeNivel;
@@ -33,6 +34,16 @@ public abstract class ModoDeJuego {
     /** Gancho: por defecto el modo no cambia el puntaje de la estrategia de puntaje. */
     public int ajustarPuntaje(int puntajeBase, EstadisticasDeNivel estadisticas) {
         return puntajeBase;
+    }
+
+    /** Gancho: texto del reloj del HUD a partir del tiempo transcurrido; por defecto, el tiempo que va. */
+    public String etiquetaDeTiempo(Duration transcurrido) {
+        return "Tiempo " + comoMinutosYSegundos(transcurrido);
+    }
+
+    protected static String comoMinutosYSegundos(Duration duracion) {
+        long segundos = Math.max(0, duracion.toSeconds());
+        return String.format("%02d:%02d", segundos / 60, segundos % 60);
     }
 
     /** Gancho: cómo se muestra el contador de movimientos (los modos con tope lo muestran como 12/200). */

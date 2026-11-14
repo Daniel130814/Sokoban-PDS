@@ -748,7 +748,7 @@ Reglas adoptadas: el tiempo arranca con el primer movimiento del nivel, se detie
 - **SRP:** medir el tiempo es una responsabilidad aparte.
 
 ### 5. Consecuencias y costos
-Es el tercer uso de Observer: es coherente pero repite el patrón, y la variedad la aportan otras decisiones. `reiniciarNivel` no reinicia el tiempo, porque emite `estadoRestaurado`, el mismo evento que deshacer, y el cronómetro no puede distinguirlos. El tiempo no entra en el puntaje ni en el archivo de guardado. El HUD todavía no lo muestra en vivo (haría falta un `Timer` de Swing).
+Es el tercer uso de Observer: es coherente pero repite el patrón, y la variedad la aportan otras decisiones. `reiniciarNivel` no reinicia el tiempo, porque emite `estadoRestaurado`, el mismo evento que deshacer, y el cronómetro no puede distinguirlos. El tiempo no entra en el puntaje ni en el archivo de guardado. Desde el 2026-11-14 el HUD lo muestra en vivo con un `Timer` de Swing (ver DD-017).
 
 ### 6. Dónde está en el código
 | Rol en el patrón | Clase/Interfaz | Estado |
@@ -759,7 +759,7 @@ Es el tercer uso de Observer: es coherente pero repite el patrón, y la variedad
 | Vista del dato | `PantallaNivelCompletado` | Implementada |
 
 ### 7. Cómo se extiende
-Un logro "Completá un nivel en menos de 30 s" necesita pasar el tiempo a `EstadisticasDeJuego`. Mostrarlo en vivo en el HUD agrega un `Timer` en `view` que repinte y consulte `Cronometro.comoTexto()`.
+Un logro "Completá un nivel en menos de 30 s" necesita pasar el tiempo a `EstadisticasDeJuego`. El reloj en vivo del HUD ya está hecho (DD-017).
 
 ### 8. Pregunta de defensa
 **Pregunta:** ¿Por qué un Observer para el cronómetro y no un campo de tiempo en `Nivel`?
@@ -838,7 +838,7 @@ Un tercer mundo es otro `Mundo` en `CampaniaEstandar` con sus archivos `nivelN.t
 - **Information Expert:** cada modo sabe cuándo se agota su límite.
 
 ### 5. Consecuencias y costos
-Contrarreloj solo revisa el tiempo al mover: si el jugador se queda quieto no pierde hasta su próxima jugada, y el HUD no muestra el reloj en vivo. Los topes (200 movimientos, 180 segundos) son provisorios: el cálculo con una búsqueda exhaustiva dio 19, 100 y 85 movimientos mínimos para los niveles 5, 6 y 7, y no se halló solución del nivel 8 con el límite de memoria usado, así que no se pudo calibrar con datos completos. Deshacer devuelve movimientos al contador (consistente con `EstadisticasDeNivel`). Al cargar una partida con reloj, se reproduce sin tiempo y no se puede perder por tiempo en la repetición.
+El reloj del HUD usa un `javax.swing.Timer` de 250 ms que solo corre mientras el HUD está en pantalla: repinta y llama a `Partida.revisarLimite()`, de modo que Contrarreloj también pierde si el jugador se queda quieto. En ese modo el HUD muestra lo que queda ("Quedan 01:55") y en los demás lo que pasó ("Tiempo 00:20"); el texto lo decide el gancho `etiquetaDeTiempo` de `ModoDeJuego`. Si el jugador deja el HUD (por ejemplo, mira los logros), el reloj sigue corriendo y la derrota se detecta apenas vuelve. El ícono del reloj está dibujado con formas porque el pack de assets no trae uno. Los topes (200 movimientos, 180 segundos) son provisorios: el cálculo con una búsqueda exhaustiva dio 19, 100 y 85 movimientos mínimos para los niveles 5, 6 y 7, y no se halló solución del nivel 8 con el límite de memoria usado, así que no se pudo calibrar con datos completos. Deshacer devuelve movimientos al contador (consistente con `EstadisticasDeNivel`). Al cargar una partida con reloj, se reproduce sin tiempo y no se puede perder por tiempo en la repetición.
 
 ### 6. Dónde está en el código
 | Rol en el patrón | Clase | Estado |
@@ -850,6 +850,7 @@ Contrarreloj solo revisa el tiempo al mover: si el jugador se queda quieto no pi
 | Contexto | `Partida` | Implementada |
 | Selección | `PantallaDeModos`, `ControladorDeJuego.elegirModo` | Implementada |
 | Derrota | `PantallaNivelFallido` | Implementada |
+| Reloj en vivo | `PanelHud` (`Timer`), `Partida.revisarLimite()`, `ModoDeJuego.etiquetaDeTiempo` | Implementada |
 
 ### 7. Cómo se extiende
 Un modo "sin deshacer" es una subclase con `limiteAgotado` falso y un deshacer deshabilitado; un modo "una vida" fallaría al romperse una caja. Se agrega a la lista de `Main`.

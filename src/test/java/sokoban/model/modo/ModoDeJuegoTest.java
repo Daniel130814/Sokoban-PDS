@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -118,6 +119,22 @@ class ModoDeJuegoTest {
 
         assertEquals("1/10", limitada.modo().etiquetaDeMovimientos(limitada.nivelActual()));
         assertEquals("1", clasica.modo().etiquetaDeMovimientos(clasica.nivelActual()));
+    }
+
+    @Test
+    void sinLimiteDeTiempoElRelojMuestraElTiempoTranscurrido() {
+        assertEquals("Tiempo 01:05", new ModoClasico().etiquetaDeTiempo(Duration.ofSeconds(65)));
+        assertEquals("Tiempo 00:00", new ModoMovimientosLimitados().etiquetaDeTiempo(Duration.ZERO));
+    }
+
+    @Test
+    void revisarElLimiteNoCambiaNadaEnLosModosSinTiempo() {
+        Partida partida = partida(new ModoMovimientosLimitados(5));
+        mover(partida, 1);
+
+        partida.revisarLimite();
+
+        assertEquals(EstadoPartida.JUGANDO, partida.estado());
     }
 
     @Test

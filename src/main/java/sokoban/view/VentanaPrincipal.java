@@ -49,7 +49,7 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
         this.cronometro = cronometro;
 
         tablero = new PanelDeTablero(partida, controlador, recursos);
-        PanelHud hud = new PanelHud(partida, controlador, logros, recursos, () -> mostrar(LOGROS));
+        PanelHud hud = new PanelHud(partida, controlador, logros, recursos, cronometro, () -> mostrar(LOGROS));
         partida.agregarObservador(tablero);
         partida.agregarObservador(hud);
         partida.agregarObservador(this);

@@ -3,8 +3,10 @@ package sokoban.tiempo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import sokoban.model.ObservadorDeJuego;
 import sokoban.model.Partida;
 import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
@@ -70,6 +72,48 @@ class ModoContrarrelojTest {
 
         assertEquals(EstadoPartida.NIVEL_COMPLETADO, partida.estado());
         assertEquals(100, partida.resumenDelNivel().puntaje());
+    }
+
+    @Test
+    void sinMoverseElJugadorPierdeAlRevisarElLimiteCuandoSeAgotaElTiempo() {
+        Partida partida = partida();
+        List<String> eventos = new ArrayList<>();
+        partida.agregarObservador(new ObservadorDeJuego() {
+            @Override
+            public void nivelFallido() {
+                eventos.add("fallido");
+            }
+        });
+        ahora[0] = 1_000;
+        partida.mover(Direccion.DERECHA);
+        ahora[0] = 8_000;
+        partida.revisarLimite();
+        assertEquals(EstadoPartida.JUGANDO, partida.estado());
+
+        ahora[0] = 12_000;
+        partida.revisarLimite();
+        partida.revisarLimite();
+
+        assertEquals(EstadoPartida.NIVEL_FALLIDO, partida.estado());
+        assertEquals(List.of("fallido"), eventos);
+    }
+
+    @Test
+    void revisarElLimiteAntesDelPrimerMovimientoNoHaceNada() {
+        Partida partida = partida();
+        ahora[0] = 900_000;
+
+        partida.revisarLimite();
+
+        assertEquals(EstadoPartida.JUGANDO, partida.estado());
+    }
+
+    @Test
+    void elHudMuestraCuantoTiempoQuedaYNoElQuePaso() {
+        ModoContrarreloj modo = new ModoContrarreloj(cronometro, Duration.ofSeconds(90));
+
+        assertEquals("Quedan 01:05", modo.etiquetaDeTiempo(Duration.ofSeconds(25)));
+        assertEquals("Quedan 00:00", modo.etiquetaDeTiempo(Duration.ofSeconds(500)));
     }
 
     @Test

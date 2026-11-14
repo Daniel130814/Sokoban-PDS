@@ -118,6 +118,17 @@ public class Partida {
         return seMovio;
     }
 
+    /**
+     * Vuelve a evaluar el límite del modo sin que el jugador se mueva, para los modos que dependen del
+     * tiempo (la vista lo llama periódicamente). Solo puede pasar de JUGANDO a NIVEL_FALLIDO.
+     */
+    public void revisarLimite() {
+        if (estado == EstadoPartida.JUGANDO && modo.evaluar(nivelActual()) == EstadoPartida.NIVEL_FALLIDO) {
+            estado = EstadoPartida.NIVEL_FALLIDO;
+            observadores.nivelFallido();
+        }
+    }
+
     public boolean deshacer() {
         return estado == EstadoPartida.JUGANDO && sesion.deshacer();
     }

@@ -38,6 +38,12 @@ public class ModoContrarreloj extends ModoDeJuego {
         return puntajeBase + (int) Math.max(0, sobrante.toSeconds());
     }
 
+    /** En este modo lo que importa es cuánto queda, no cuánto pasó. */
+    @Override
+    public String etiquetaDeTiempo(Duration transcurrido) {
+        return "Quedan " + comoMinutosYSegundos(limite.minus(transcurrido));
+    }
+
     @Override
     public String nombre() {
         return "Contrarreloj";
