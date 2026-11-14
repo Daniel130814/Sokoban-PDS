@@ -234,7 +234,7 @@ classDiagram
     Logro --> CriterioDeLogro
 ```
 
-## Carga de niveles: Simple Factory
+## Carga de niveles: Factory Method
 
 ```mermaid
 classDiagram
@@ -243,16 +243,29 @@ classDiagram
         +cargarDesdeRecurso(String) Nivel
     }
     class FabricaDeElementos {
-        <<Simple Factory>>
         +crearCelda(char) TipoCelda
         +crearCaja(char, Posicion) Optional
         +esJugador(char) boolean
+    }
+    class CreadorDeCaja {
+        <<interface>>
+        +crearCaja(char, Posicion) Caja
+    }
+    class CreadorDeCajaNormal
+    class CreadorDeCajaFragil
+    class CreadorDeCajaLlave
+    class Caja {
+        <<abstract>>
     }
     class Nivel
 
     CargadorDeNivel --> FabricaDeElementos
     CargadorDeNivel ..> Nivel : construye
-    FabricaDeElementos ..> Caja : crea
+    FabricaDeElementos --> CreadorDeCaja : mapa símbolo→creador
+    CreadorDeCaja <|.. CreadorDeCajaNormal
+    CreadorDeCaja <|.. CreadorDeCajaFragil
+    CreadorDeCaja <|.. CreadorDeCajaLlave
+    CreadorDeCaja ..> Caja : crea
 ```
 
 ## Campaña: Composite

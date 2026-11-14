@@ -1,23 +1,47 @@
 package sokoban.model.carga;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import sokoban.exception.NivelInvalidoException;
 import sokoban.model.Caja;
-import sokoban.model.CajaFragil;
-import sokoban.model.CajaLlave;
-import sokoban.model.CajaNormal;
 import sokoban.model.Posicion;
 import sokoban.model.TipoCelda;
 
 /**
- * Simple Factory: único lugar que conoce la leyenda de caracteres de los archivos de nivel.
+ * Único lugar que conoce la leyenda de caracteres de los archivos de nivel. Las celdas se resuelven
+ * acá; las cajas se delegan en un {@link CreadorDeCaja} por símbolo (Factory Method).
  * Leyenda: '#' pared, ' ' piso, '.' destino, '$' caja, '*' caja sobre destino, '%' caja frágil,
  * '@' jugador, '+' jugador sobre destino, '~' hielo (terreno resbaladizo).
  * Llaves: 'a'-'i' caja llave de id 1-9, '1'-'9' cerrojo de ese id, 'A'-'I' muro cerrado que abre
  * el cerrojo de id 1-9.
  */
 public class FabricaDeElementos {
+
+    private final Map<Character, CreadorDeCaja> creadoresDeCaja;
+
+    public FabricaDeElementos() {
+        this(creadoresEstandar());
+    }
+
+    /** Permite registrar otros creadores de caja sin tocar esta clase (por ejemplo, en pruebas). */
+    public FabricaDeElementos(Map<Character, CreadorDeCaja> creadoresDeCaja) {
+        this.creadoresDeCaja = Map.copyOf(creadoresDeCaja);
+    }
+
+    private static Map<Character, CreadorDeCaja> creadoresEstandar() {
+        Map<Character, CreadorDeCaja> creadores = new HashMap<>();
+        CreadorDeCaja normal = new CreadorDeCajaNormal();
+        creadores.put('$', normal);
+        creadores.put('*', normal);
+        creadores.put('%', new CreadorDeCajaFragil());
+        CreadorDeCaja llave = new CreadorDeCajaLlave();
+        for (char letra = 'a'; letra <= 'i'; letra++) {
+            creadores.put(letra, llave);
+        }
+        return creadores;
+    }
 
     public TipoCelda crearCelda(char simbolo) {
         if (idDeCerrojo(simbolo).isPresent()) {
@@ -39,15 +63,8 @@ public class FabricaDeElementos {
     }
 
     public Optional<Caja> crearCaja(char simbolo, Posicion posicion) {
-        OptionalInt llave = idDeLlave(simbolo);
-        if (llave.isPresent()) {
-            return Optional.of(new CajaLlave(posicion, llave.getAsInt()));
-        }
-        return switch (simbolo) {
-            case '$', '*' -> Optional.of(new CajaNormal(posicion));
-            case '%' -> Optional.of(new CajaFragil(posicion));
-            default -> Optional.empty();
-        };
+        return Optional.ofNullable(creadoresDeCaja.get(simbolo))
+                .map(creador -> creador.crearCaja(simbolo, posicion));
     }
 
     public boolean esJugador(char simbolo) {
@@ -63,6 +80,6 @@ public class FabricaDeElementos {
     }
 
     private OptionalInt idDeLlave(char simbolo) {
-        return simbolo >= 'a' && simbolo <= 'i' ? OptionalInt.of(simbolo - 'a' + 1) : OptionalInt.empty();
+        return CreadorDeCajaLlave.idDe(simbolo);
     }
 }

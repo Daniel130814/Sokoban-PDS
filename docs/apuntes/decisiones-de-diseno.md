@@ -7,7 +7,7 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-001: Separación en capas (MVC) y herramienta de build (Maven)
 - DD-002: Modelo base con responsabilidades únicas (SRP, Information Expert)
 - DD-003: Cajas polimórficas y `Nivel` como coordinador del empuje
-- DD-004: Carga de niveles desde `.txt` con Simple Factory
+- DD-004: Carga de niveles desde `.txt` con Factory Method para las cajas
 - DD-005: Estados de la partida con un enum (State GoF descartado por ahora)
 - DD-006: Terreno resbaladizo con Strategy
 - DD-007: Cajas frágil y llave; cerrojo y muros con Observer (State descartado)
@@ -170,11 +170,11 @@ Una caja frágil se agrega como `CajaFragil extends Caja` que descuente resisten
 
 ---
 
-## DD-004: Carga de niveles desde `.txt` con Simple Factory
+## DD-004: Carga de niveles desde `.txt` con Factory Method para las cajas
 
-- **Fecha:** 2026-10-22
+- **Fecha:** 2026-10-22 (actualizada el 2026-11-14: la creación de cajas pasó de Simple Factory a Factory Method)
 - **Estado:** Propuesta
-- **Patrón / principio:** Simple Factory (idioma, no es un patrón GoF); OCP; DIP por inyección; GRASP Creator y Pure Fabrication
+- **Patrón / principio:** Factory Method (GoF) para las cajas; OCP; DIP por inyección; GRASP Creator y Pure Fabrication
 - **Requisito relacionado:** Niveles cargados desde archivos de texto, uno por nivel (requisito no confirmado)
 
 ### 1. Problema y contexto
@@ -185,38 +185,41 @@ Leyenda adoptada de forma provisoria: `#` pared, ` ` piso, `.` destino, `$` caja
 ### 2. Alternativas consideradas
 | Alternativa | Ventajas | Desventajas | Por qué se descartó |
 |---|---|---|---|
-| `FabricaDeElementos` (Simple Factory) + `CargadorDeNivel` | La leyenda está en un solo lugar; el cargador no cambia al sumar un elemento | Una clase más; no es GoF | (elegida) |
+| `FabricaDeElementos` con un `CreadorDeCaja` por tipo de caja (Factory Method) + `CargadorDeNivel` | La leyenda está en un solo lugar; sumar un tipo de caja es un creador nuevo, sin editar un `switch`; el cargador no cambia | Más clases chicas | (elegida) |
 | `switch` de caracteres dentro del cargador | Menos clases | Mezcla leer/validar con conocer la leyenda; crece con cada elemento | Viola SRP y OCP |
 | Builder para armar el nivel por pasos | Útil con muchas variantes | Hoy el nivel se arma en un solo paso: sobreingeniería | Se reevalúa si crece la validación |
-| Factory Method (GoF, subclases del cargador deciden qué crear) | Permite variar la creación por herencia | No hay variantes de cargador | No hay problema que lo justifique |
+| Simple Factory con un `switch` de caracteres (la versión anterior) | Una sola clase, sencillo | No es un patrón GoF; el `switch` crece con cada tipo de caja | Se reemplazó por Factory Method |
+| Abstract Factory (familias de elementos) | Cubre variantes completas de reglas | No hay ninguna familia de productos que varíe junta | No hay problema que lo justifique |
 
 ### 3. Decisión
-`FabricaDeElementos` traduce un carácter a una celda (`TipoCelda`), una caja opcional o la marca de jugador. `CargadorDeNivel` recorre las líneas, pide a la fábrica los objetos, valida y arma el `Nivel`. La fábrica se inyecta por constructor. Hoy no hay una interfaz de fábrica porque solo existe una implementación; se introducirá si aparece una segunda (por ejemplo, un formato de nivel distinto o temas, donde evaluaríamos Abstract Factory).
+`FabricaDeElementos` traduce un carácter a una celda (`TipoCelda`), a la marca de jugador o a una caja. Las cajas se delegan en un `CreadorDeCaja`, que es el método de fábrica (`crearCaja(símbolo, posición)`): `CreadorDeCajaNormal` ('$' y '*'), `CreadorDeCajaFragil` ('%') y `CreadorDeCajaLlave` ('a' a 'i', donde la letra es el id). La fábrica guarda un mapa símbolo→creador, que por defecto trae esos tres y se puede reemplazar por constructor. `CargadorDeNivel` recorre las líneas, pide a la fábrica los objetos, valida y arma el `Nivel`; no cambió.
 
 ### 4. Principios que favorece
 - **SRP:** una clase conoce la leyenda, otra lee y valida.
-- **OCP:** agregar `%` para caja frágil es tocar la fábrica, sin modificar el cargador (aunque la fábrica en sí sí se edita: el cambio queda localizado, no cerrado).
+- **OCP:** un tipo de caja nuevo es un creador más y una entrada en el mapa; ni el cargador ni el resto de la fábrica se modifican (se prueba en `CreadoresDeCajaTest` con un creador inyectado).
 - **DIP (parcial):** el cargador recibe su fábrica desde afuera; todavía depende de una clase concreta.
 - **GRASP Creator / Pure Fabrication:** la fábrica no existe en el dominio del juego; se crea para bajar el acoplamiento y concentrar la creación.
 
 ### 5. Consecuencias y costos
-El `switch` de la fábrica crece con cada elemento: el patrón lo concentra, no lo elimina. Si crece mucho, se reemplaza por un registro carácter→creador. La validación de niveles imposibles (cajas atrapadas) no se hace; solo la estructural. Se agregó `Nivel.tablero()` porque los tests y luego la vista necesitan leer las celdas.
+Es una forma simplificada de Factory Method: los creadores son objetos que solo crean, no clases con otras operaciones que se heredan, y la selección por símbolo sigue en un mapa. Las celdas siguen en un `switch` en la fábrica porque son valores de un enum y no hay variación de comportamiento que justifique un creador. Hay tres clases chicas más. La validación de niveles imposibles (cajas atrapadas) no se hace; solo la estructural. Se agregó `Nivel.tablero()` porque los tests y luego la vista necesitan leer las celdas.
 
 ### 6. Dónde está en el código
 | Rol | Clase | Estado |
 |---|---|---|
-| Fábrica (Simple Factory) | `FabricaDeElementos` | Implementada |
+| Creator (método de fábrica) | `CreadorDeCaja` | Implementada |
+| Creadores concretos | `CreadorDeCajaNormal`, `CreadorDeCajaFragil`, `CreadorDeCajaLlave` | Implementada |
+| Productos | `CajaNormal`, `CajaFragil`, `CajaLlave` | Implementada |
+| Registro símbolo→creador | `FabricaDeElementos` | Implementada |
 | Cliente de la fábrica | `CargadorDeNivel` | Implementada |
 | Error de formato | `NivelInvalidoException` | Implementada |
 | Recurso de ejemplo | `levels/nivel1.txt` | Implementada |
-| Interfaz de fábrica | — | No planificada hasta tener una segunda implementación |
 
 ### 7. Cómo se extiende
-Para la caja frágil: nuevo carácter en `FabricaDeElementos.crearCaja` y su clase `CajaFragil`; el cargador no cambia. Para otro nivel, un archivo nuevo en `src/main/resources/levels`.
+Para una caja nueva (por ejemplo, pesada): su clase, un `CreadorDeCajaPesada` y su símbolo en el mapa de `FabricaDeElementos`; el cargador no cambia. Para otro nivel, un archivo nuevo en `src/main/resources/levels`.
 
 ### 8. Pregunta de defensa
-**Pregunta:** ¿Por qué una Simple Factory y no Factory Method ni Builder?
-**Respuesta breve:** Necesitamos centralizar la traducción carácter→objeto, que es lo que más va a cambiar. Factory Method exige subclases que decidan qué crear y acá no hay variantes de cargador; Builder se justifica con construcciones en varios pasos y hoy el nivel se arma de una vez. Reconocemos que Simple Factory no es un patrón GoF.
+**Pregunta:** ¿Por qué Factory Method para las cajas y no un `switch`?
+**Respuesta breve:** Lo que cambia es qué tipo de caja se crea para cada símbolo y ya hay tres tipos; con un creador por tipo, agregar uno nuevo no obliga a editar código existente. El cargador sigue sin saber qué cajas existen. Reconocemos que es una versión simplificada del patrón y que para las celdas dejamos el `switch` porque no hay variación de comportamiento. Builder no hace falta porque el nivel se arma de una vez, y Abstract Factory no aplica porque no hay familias de productos.
 
 ---
 
@@ -885,7 +888,7 @@ Un modo "sin deshacer" es una subclase con `limiteAgotado` falso y un deshacer d
 | DD-001 | Borrador de la entrada, estructura de paquetes y `pom.xml` | completar |
 | DD-002 | Borrador de la entrada, código del modelo base y tests | completar |
 | DD-003 | Borrador de la entrada, código de cajas, `Nivel` y tests | completar |
-| DD-004 | Borrador de la entrada, fábrica, cargador, nivel de ejemplo y tests | completar |
+| DD-004 | Borrador de la entrada, fábrica, cargador, nivel de ejemplo y tests; el 2026-11-14 pasó a Factory Method con `CreadorDeCaja` y tests | completar |
 | DD-005 | Evaluación State vs. enum, `Partida`, `Nivel.estaResuelto()` y tests | completar |
 | DD-006 | Borrador de la entrada, estrategias de movimiento, hielo y tests | completar |
 | DD-007 | Borrador de la entrada, cajas frágil/llave, Observer cerrojo–muro, cargador y tests | completar |

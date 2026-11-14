@@ -13,7 +13,7 @@ enunciado vigente.
 | DD-001 | MVC, SRP | Separar reglas, vista y entrada | paquetes `model`, `view`, `controller` | `ArquitecturaTest` (el modelo no importa Swing, AWT ni javax.sound) |
 | DD-002 | SRP, Information Expert | Responsabilidades chicas en el modelo base | `Posicion`, `Tablero`, `Jugador`, `Direccion`, `TipoCelda` | `TableroTest` |
 | DD-003 | Polimorfismo, OCP, LSP, GRASP Controller | Empujar cajas sin `switch` por tipo | `Caja`, `CajaNormal`, `Nivel` | `NivelTest` (incluye una caja anónima) |
-| DD-004 | Simple Factory (no es GoF) | Traducir caracteres del `.txt` a objetos | `FabricaDeElementos`, `CargadorDeNivel` | `CargadorDeNivelTest` |
+| DD-004 | **Factory Method** (cajas) | Traducir caracteres del `.txt` a objetos y sumar tipos de caja sin editar un `switch` | `CreadorDeCaja`, `CreadorDeCajaNormal`, `CreadorDeCajaFragil`, `CreadorDeCajaLlave`, `FabricaDeElementos`, `CargadorDeNivel` | `CargadorDeNivelTest`, `CreadoresDeCajaTest` |
 | DD-005 | Sin patrón (State descartado) | Estados de la partida | `EstadoPartida`, `Partida` | `PartidaTest` |
 | DD-006 | **Strategy** | Cómo se mueve una caja según el terreno | `ReglaDeMovimiento`, `MovimientoNormal`, `Deslizamiento`, `TipoCelda` | `DeslizamientoTest` |
 | DD-007 | **Observer** (cerrojo → muros) | Una llave abre muros sin acoplarlos | `Cerrojo`, `ObservadorDeCerrojo`, `Muro`, `CajaLlave`, `CajaFragil` | `LlaveYMuroTest`, `CajaFragilTest` |
@@ -27,7 +27,7 @@ enunciado vigente.
 | DD-016 | **Composite** | Agrupar niveles en mundos y tratarlos igual | `ElementoDeCampania`, `NivelDeCampania`, `Mundo`, `CampaniaEstandar` | `CampaniaTest` |
 | DD-017 | **Template Method** | Modos que cambian cuándo se pierde un nivel | `ModoDeJuego`, `ModoClasico`, `ModoMovimientosLimitados`, `ModoContrarreloj` | `ModoDeJuegoTest`, `ModoContrarrelojTest`, `GuardadoYCargaTest` |
 
-Patrones GoF efectivamente aplicados: Strategy, Observer, Memento, Command, Facade, Composite y Template Method.
+Patrones GoF efectivamente aplicados: Strategy, Observer, Memento, Command, Factory Method, Facade, Composite y Template Method.
 Proxy y Adapter no se usaron (preferencia provisional de la skill). Singleton se evaluó y se descartó (DD-009).
 
 ### Puntos débiles que conviene conocer antes de la defensa
