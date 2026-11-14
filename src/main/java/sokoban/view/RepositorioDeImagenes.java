@@ -8,8 +8,8 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 /**
- * Flyweight Factory: cada imagen se carga una sola vez y se comparte entre todas las celdas que
- * la usan, en lugar de leer el mismo PNG cientos de veces en cada repintado.
+ * Cache de imágenes (se usa a través de {@link RecursosVisuales}): cada imagen se carga una sola vez y
+ * se comparte entre todas las celdas que la usan, en lugar de leer el mismo PNG en cada repintado.
  */
 public class RepositorioDeImagenes {
 

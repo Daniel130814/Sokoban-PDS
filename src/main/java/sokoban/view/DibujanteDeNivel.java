@@ -16,11 +16,11 @@ class DibujanteDeNivel {
     private static final int CELDA = PanelDeTablero.TAMANIO_CELDA;
     private static final Color CAJA_EN_DESTINO = new Color(0, 200, 0, 90);
 
-    private final RepositorioDeImagenes imagenes;
+    private final RecursosVisuales recursos;
     private final SelectorDeSprites sprites = new SelectorDeSprites();
 
-    DibujanteDeNivel(RepositorioDeImagenes imagenes) {
-        this.imagenes = imagenes;
+    DibujanteDeNivel(RecursosVisuales recursos) {
+        this.recursos = recursos;
     }
 
     void dibujar(Graphics2D g, Nivel nivel, Direccion orientacion) {
@@ -56,6 +56,6 @@ class DibujanteDeNivel {
     }
 
     private void dibujarSprite(Graphics2D g, String nombre, Posicion posicion) {
-        g.drawImage(imagenes.imagen(nombre), posicion.columna() * CELDA, posicion.fila() * CELDA, CELDA, CELDA, null);
+        g.drawImage(recursos.imagen(nombre), posicion.columna() * CELDA, posicion.fila() * CELDA, CELDA, CELDA, null);
     }
 }

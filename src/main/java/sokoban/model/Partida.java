@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import sokoban.model.enums.Direccion;
 import sokoban.model.enums.EstadoPartida;
+import sokoban.model.modo.ModoClasico;
+import sokoban.model.modo.ModoDeJuego;
 import sokoban.model.puntaje.EstadisticasDeNivel;
 import sokoban.model.puntaje.EstrategiaDePuntaje;
 import sokoban.model.puntaje.PuntajePorEficiencia;
@@ -15,6 +17,7 @@ public class Partida {
     private int indiceActual;
     private final DifusorDeEventos observadores = new DifusorDeEventos();
     private final EstrategiaDePuntaje estrategiaDePuntaje;
+    private ModoDeJuego modo;
     private final List<EstadoNivel> estadosIniciales;
     private SesionDeNivel sesion;
     private EstadoPartida estado = EstadoPartida.JUGANDO;
@@ -24,10 +27,15 @@ public class Partida {
     }
 
     public Partida(List<Nivel> niveles, EstrategiaDePuntaje estrategiaDePuntaje) {
+        this(niveles, estrategiaDePuntaje, new ModoClasico());
+    }
+
+    public Partida(List<Nivel> niveles, EstrategiaDePuntaje estrategiaDePuntaje, ModoDeJuego modo) {
         if (niveles.isEmpty()) {
             throw new IllegalArgumentException("Una partida necesita al menos un nivel");
         }
         this.estrategiaDePuntaje = estrategiaDePuntaje;
+        this.modo = modo;
         this.niveles = List.copyOf(niveles);
         this.niveles.forEach(nivel -> nivel.agregarObservador(observadores));
         this.estadosIniciales = this.niveles.stream().map(Nivel::guardarEstado).toList();
@@ -58,6 +66,15 @@ public class Partida {
         observadores.agregar(observador);
     }
 
+    public ModoDeJuego modo() {
+        return modo;
+    }
+
+    /** Cambia las reglas de fin de nivel; pensado para usarse justo antes de empezar una partida nueva. */
+    public void establecerModo(ModoDeJuego nuevoModo) {
+        this.modo = nuevoModo;
+    }
+
     public EstadoPartida estado() {
         return estado;
     }
@@ -76,12 +93,13 @@ public class Partida {
 
     /** Context del Strategy: arma las estadísticas del nivel y delega el cálculo del puntaje. */
     public ResumenDeNivel resumenDelNivel() {
-        if (estado == EstadoPartida.JUGANDO) {
+        if (estado == EstadoPartida.JUGANDO || estado == EstadoPartida.NIVEL_FALLIDO) {
             throw new IllegalStateException("El nivel todavía no está completado");
         }
         EstadisticasDeNivel estadisticas = new EstadisticasDeNivel(
                 nivelActual().movimientos(), nivelActual().empujes(), sesion.usosDeDeshacer());
-        return new ResumenDeNivel(estadisticas, estrategiaDePuntaje.calcular(estadisticas));
+        int base = estrategiaDePuntaje.calcular(estadisticas);
+        return new ResumenDeNivel(estadisticas, modo.ajustarPuntaje(base, estadisticas));
     }
 
     public boolean mover(Direccion direccion) {
@@ -89,9 +107,13 @@ public class Partida {
             return false;
         }
         boolean seMovio = sesion.mover(direccion);
-        if (seMovio && nivelActual().estaResuelto()) {
-            estado = EstadoPartida.NIVEL_COMPLETADO;
-            observadores.nivelCompletado();
+        if (seMovio) {
+            estado = modo.evaluar(nivelActual());
+            if (estado == EstadoPartida.NIVEL_COMPLETADO) {
+                observadores.nivelCompletado();
+            } else if (estado == EstadoPartida.NIVEL_FALLIDO) {
+                observadores.nivelFallido();
+            }
         }
         return seMovio;
     }
@@ -100,9 +122,14 @@ public class Partida {
         return estado == EstadoPartida.JUGANDO && sesion.deshacer();
     }
 
+    /** Reinicia el nivel; si se había fallado, además vuelve a jugar y avisa que el nivel empieza de nuevo. */
     public void reiniciarNivel() {
         if (estado == EstadoPartida.JUGANDO) {
             sesion.reiniciar();
+        } else if (estado == EstadoPartida.NIVEL_FALLIDO) {
+            sesion.reiniciar();
+            estado = EstadoPartida.JUGANDO;
+            observadores.nivelCambiado();
         }
     }
 

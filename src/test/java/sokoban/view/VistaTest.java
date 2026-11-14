@@ -72,7 +72,7 @@ class VistaTest {
     void elPanelDibujaElTableroYSeActualizaAlMoverse() throws IOException {
         Partida partida = partida("#########", "#@ $~~ .#", "#########");
         PanelDeTablero panel = new PanelDeTablero(partida, new ControladorDeJuego(partida),
-                new RepositorioDeImagenes());
+                new RecursosVisuales());
         partida.agregarObservador(panel);
         panel.setSize(panel.getPreferredSize());
 
@@ -91,8 +91,7 @@ class VistaTest {
     void elHudMuestraLosContadoresDelNivel() {
         Partida partida = partida("#######", "#@  $.#", "#######");
         PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
-                new Logros(partida, CatalogoDeLogros.estandar()), new RepositorioDeImagenes(),
-                new RepositorioDeFuentes(), () -> { });
+                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), () -> { });
         partida.agregarObservador(hud);
 
         partida.mover(Direccion.DERECHA);
@@ -131,7 +130,7 @@ class VistaTest {
     void elTableroSeDestellaAlRomperseUnaCajaYAlActivarseUnCerrojo() {
         Partida partida = partida("#######", "#@%  .#", "#######");
         PanelDeTablero panel = new PanelDeTablero(partida, new ControladorDeJuego(partida),
-                new RepositorioDeImagenes());
+                new RecursosVisuales());
         panel.setSize(panel.getPreferredSize());
         BufferedImage normal = captura(panel);
 

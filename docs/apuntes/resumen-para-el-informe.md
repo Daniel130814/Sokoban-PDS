@@ -19,12 +19,15 @@ enunciado vigente.
 | DD-007 | **Observer** (cerrojo → muros) | Una llave abre muros sin acoplarlos | `Cerrojo`, `ObservadorDeCerrojo`, `Muro`, `CajaLlave`, `CajaFragil` | `LlaveYMuroTest`, `CajaFragilTest` |
 | DD-008 | **Memento** | Deshacer y reiniciar con estado completo | `Nivel`, `EstadoNivel`, `EstadoCaja`, `HistorialDeEstados`, `SesionDeNivel` | `EstadoNivelTest`, `HistorialDeEstadosTest`, `SesionDeNivelTest` |
 | DD-009 | **Observer**, MVC, GRASP Controller | Vista, HUD y sonido reaccionan sin acoplarse al modelo | `ObservadorDeJuego`, `DifusorDeEventos`, `PanelDeTablero`, `PanelHud`, `SonidosDelJuego`, `ControladorDeJuego` | `EventosDeJuegoTest`, `SonidosDelJuegoTest`, `ControladorDeJuegoTest` |
-| DD-010 | **Flyweight** | Compartir imágenes entre celdas | `RepositorioDeImagenes` | `VistaTest` |
+| DD-010 | **Facade** | Una sola entrada a imágenes y fuentes para la vista | `RecursosVisuales`, `RepositorioDeImagenes`, `RepositorioDeFuentes` | `VistaTest` |
 | DD-011 | **Strategy** | Criterio de puntaje intercambiable | `EstrategiaDePuntaje`, `PuntajePorEficiencia`, `Partida` | `PuntajeTest` |
 | DD-012 | **Command** (funcionalidad adicional 1) | Guardar, cargar y reproducir la partida | `Accion`, `Mover`, `Deshacer`, `Reiniciar`, `Continuar`, `GuardadoDePartida` | `GuardadoYCargaTest`, `AccionTest` |
 | DD-013 | **Observer + Strategy** (funcionalidad adicional 2) | Logros sin tocar el modelo | `Logros`, `CriterioDeLogro`, `Logro`, `CatalogoDeLogros` | `LogrosTest` |
+| DD-015 | **Observer** | Medir el tiempo por nivel sin tocar el modelo | `Cronometro` | `CronometroTest` |
+| DD-016 | **Composite** | Agrupar niveles en mundos y tratarlos igual | `ElementoDeCampania`, `NivelDeCampania`, `Mundo`, `CampaniaEstandar` | `CampaniaTest` |
+| DD-017 | **Template Method** | Modos que cambian cuándo se pierde un nivel | `ModoDeJuego`, `ModoClasico`, `ModoMovimientosLimitados`, `ModoContrarreloj` | `ModoDeJuegoTest`, `ModoContrarrelojTest`, `GuardadoYCargaTest` |
 
-Patrones GoF efectivamente aplicados: Strategy (2 usos y logros), Observer (3 usos), Memento, Flyweight, Command.
+Patrones GoF efectivamente aplicados: Strategy, Observer, Memento, Command, Facade, Composite y Template Method.
 Proxy y Adapter no se usaron (preferencia provisional de la skill). Singleton se evaluó y se descartó (DD-009).
 
 ### Puntos débiles que conviene conocer antes de la defensa
@@ -39,7 +42,7 @@ Proxy y Adapter no se usaron (preferencia provisional de la skill). Singleton se
 | Requisito | Estado | Detalle |
 |---|---|---|
 | Elementos del tablero | Cubierto | Paredes, pisos, destinos, hielo, cerrojos, muros abiertos y cerrados, tres tipos de caja y jugador |
-| Niveles desde `.txt` | Cubierto | 4 niveles de ejemplo, uno por archivo; son demostrativos y chicos |
+| Niveles desde `.txt` | Cubierto | 8 niveles, uno por archivo, agrupados en dos mundos; no está comprobado que los niveles 6 a 8 se puedan resolver |
 | Movimiento con flechas, solo empujar, una caja | Cubierto | Probado en `NivelTest` |
 | Deshacer: 15 estados, 5 pasos, 3 usos consecutivos | Cubierto con reglas provisorias | Ver DD-008 |
 | Condición de victoria y avance de nivel | Cubierto | Pantalla final: hoy un diálogo |

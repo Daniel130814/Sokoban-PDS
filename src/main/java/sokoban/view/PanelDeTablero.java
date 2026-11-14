@@ -27,10 +27,10 @@ public class PanelDeTablero extends PanelEspacial implements ObservadorDeJuego {
     private final EfectoDeDestello destello = new EfectoDeDestello(this::repaint);
     private Direccion orientacion = Direccion.ARRIBA;
 
-    public PanelDeTablero(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes) {
-        super(imagenes, "fondo_espacio");
+    public PanelDeTablero(Partida partida, ControladorDeJuego controlador, RecursosVisuales recursos) {
+        super(recursos, "fondo_espacio");
         this.partida = partida;
-        this.dibujante = new DibujanteDeNivel(imagenes);
+        this.dibujante = new DibujanteDeNivel(recursos);
         setFocusable(true);
         asociarTecla(KeyEvent.VK_UP, Direccion.ARRIBA, controlador);
         asociarTecla(KeyEvent.VK_DOWN, Direccion.ABAJO, controlador);

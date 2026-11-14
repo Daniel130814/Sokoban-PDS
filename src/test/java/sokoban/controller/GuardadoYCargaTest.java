@@ -19,6 +19,9 @@ import sokoban.model.carga.CargadorDeNivel;
 import sokoban.model.carga.FabricaDeElementos;
 import sokoban.model.enums.Direccion;
 import sokoban.model.enums.EstadoPartida;
+import sokoban.model.modo.ModoClasico;
+import sokoban.model.modo.ModoDeJuego;
+import sokoban.model.modo.ModoMovimientosLimitados;
 
 class GuardadoYCargaTest {
 
@@ -113,7 +116,46 @@ class GuardadoYCargaTest {
 
         controlador.guardar(archivo);
 
-        assertEquals(List.of("SOKOBAN-GUARDADO 1", "MOVER ABAJO"), Files.readAllLines(archivo));
+        assertEquals(List.of("SOKOBAN-GUARDADO 1", "MODO Clásico", "MOVER ABAJO"), Files.readAllLines(archivo));
+    }
+
+    @Test
+    void elModoDeJuegoSeGuardaYSeRecuperaConLaPartida() throws IOException {
+        List<ModoDeJuego> modos = List.of(new ModoClasico(), new ModoMovimientosLimitados(50));
+        ControladorDeJuego controlador = new ControladorDeJuego(partidaNueva(), modos);
+        controlador.elegirModo(modos.get(1));
+        controlador.mover(Direccion.IZQUIERDA);
+        Path archivo = carpeta.resolve("modo.txt");
+        controlador.guardar(archivo);
+
+        Partida recuperada = partidaNueva();
+        new ControladorDeJuego(recuperada, modos).cargar(archivo);
+
+        assertEquals("Movimientos limitados", recuperada.modo().nombre());
+        assertEquals(1, recuperada.nivelActual().movimientos());
+    }
+
+    @Test
+    void unGuardadoSinModoSeCargaConElModoActual() throws IOException {
+        Path archivo = carpeta.resolve("viejo.txt");
+        Files.write(archivo, List.of("SOKOBAN-GUARDADO 1", "MOVER IZQUIERDA"));
+        Partida partida = partidaNueva();
+
+        new ControladorDeJuego(partida).cargar(archivo);
+
+        assertEquals("Clásico", partida.modo().nombre());
+        assertEquals(1, partida.nivelActual().movimientos());
+    }
+
+    @Test
+    void unModoDesconocidoEnElArchivoSeRechazaSinTocarLaPartida() throws IOException {
+        Path archivo = carpeta.resolve("raro.txt");
+        Files.write(archivo, List.of("SOKOBAN-GUARDADO 1", "MODO Inventado", "MOVER IZQUIERDA"));
+        Partida partida = partidaNueva();
+
+        assertThrows(GuardadoInvalidoException.class, () -> new ControladorDeJuego(partida).cargar(archivo));
+
+        assertEquals(0, partida.nivelActual().movimientos());
     }
 
     @Test

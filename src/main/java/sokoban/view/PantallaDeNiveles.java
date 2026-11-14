@@ -12,11 +12,16 @@ import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import sokoban.model.Nivel;
+import sokoban.model.campania.ElementoDeCampania;
+import sokoban.model.campania.Mundo;
+import sokoban.model.campania.NivelDeCampania;
 import sokoban.model.enums.Direccion;
 
 /** Catálogo de niveles: una miniatura por nivel con su título y qué enseña. Solo para mirar. */
@@ -26,17 +31,25 @@ public class PantallaDeNiveles extends PanelEspacial {
     private static final int ANCHO_DE_MINIATURA = 190;
     private static final int ALTO_DE_MINIATURA = 110;
 
-    public PantallaDeNiveles(RepositorioDeImagenes imagenes, RepositorioDeFuentes fuentes,
-            List<FichaDeNivel> fichas, Runnable volver) {
-        super(imagenes, "fondo_menu");
+    private static final Color[] ACENTOS = {new Color(60, 200, 255), new Color(255, 200, 60), new Color(120, 230, 140)};
+    private static final int SEPARACION = 12;
+
+    private final RecursosVisuales recursos;
+    private final DibujanteDeNivel dibujante;
+    private int mundosDibujados;
+
+    public PantallaDeNiveles(RecursosVisuales recursos, ElementoDeCampania campania, Runnable volver) {
+        super(recursos, "fondo_menu");
+        this.recursos = recursos;
+        this.dibujante = new DibujanteDeNivel(recursos);
         setLayout(new BorderLayout());
 
         JLabel titulo = new JLabel("NIVELES", SwingConstants.CENTER);
-        titulo.setFont(fuentes.fuente("kenvector_future", 32f));
+        titulo.setFont(recursos.fuente("kenvector_future", 32f));
         titulo.setForeground(new Color(150, 200, 255));
         titulo.setBorder(BorderFactory.createEmptyBorder(16, 0, 4, 0));
-        JLabel nota = new JLabel("Los primeros 4 niveles son el tutorial", SwingConstants.CENTER);
-        nota.setFont(fuentes.fuente("kenvector_future_thin", 13f));
+        JLabel nota = new JLabel(campania.cantidadDeNiveles() + " niveles en la campaña", SwingConstants.CENTER);
+        nota.setFont(recursos.fuente("kenvector_future_thin", 13f));
         nota.setForeground(Color.WHITE);
         JPanel encabezado = new JPanel(new GridLayout(2, 1));
         encabezado.setOpaque(false);
@@ -44,39 +57,68 @@ public class PantallaDeNiveles extends PanelEspacial {
         encabezado.add(nota);
         add(encabezado, BorderLayout.NORTH);
 
-        DibujanteDeNivel dibujante = new DibujanteDeNivel(imagenes);
-        JPanel cuadricula = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 12));
-        cuadricula.setOpaque(false);
-        cuadricula.setPreferredSize(new Dimension(3 * (TAMANIO_DE_TARJETA.width + 12) + 12,
-                2 * (TAMANIO_DE_TARJETA.height + 12) + 12));
-        for (int i = 0; i < fichas.size(); i++) {
-            cuadricula.add(new Tarjeta(fichas.get(i), dibujante, fuentes, i < 4));
-        }
+        JPanel secciones = new JPanel();
+        secciones.setLayout(new BoxLayout(secciones, BoxLayout.Y_AXIS));
+        secciones.setOpaque(false);
+        agregarElemento(secciones, campania);
         JPanel centro = new JPanel(new GridBagLayout());
         centro.setOpaque(false);
-        centro.add(cuadricula);
-        add(centro, BorderLayout.CENTER);
+        centro.add(secciones);
+        JScrollPane desplazamiento = new JScrollPane(centro);
+        desplazamiento.setOpaque(false);
+        desplazamiento.getViewport().setOpaque(false);
+        desplazamiento.setBorder(BorderFactory.createEmptyBorder());
+        desplazamiento.getVerticalScrollBar().setUnitIncrement(24);
+        add(desplazamiento, BorderLayout.CENTER);
 
         JPanel pie = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 12));
         pie.setOpaque(false);
-        pie.add(new BotonEspacial("Volver", 200, 14f, imagenes, fuentes, volver));
+        pie.add(new BotonEspacial("Volver", 200, 14f, recursos, volver));
         add(pie, BorderLayout.SOUTH);
+    }
+
+    /** Recorre el Composite: cada mundo es una sección con una fila de tarjetas para sus niveles directos. */
+    private void agregarElemento(JPanel secciones, ElementoDeCampania elemento) {
+        if (!(elemento instanceof Mundo mundo)) {
+            return;
+        }
+        List<NivelDeCampania> propios = mundo.hijos().stream()
+                .filter(NivelDeCampania.class::isInstance).map(NivelDeCampania.class::cast).toList();
+        if (!propios.isEmpty()) {
+            Color acento = ACENTOS[mundosDibujados++ % ACENTOS.length];
+            JLabel cabecera = new JLabel(mundo.titulo() + "  -  " + mundo.detalle());
+            cabecera.setFont(recursos.fuente("kenvector_future", 16f));
+            cabecera.setForeground(acento);
+            cabecera.setBorder(BorderFactory.createEmptyBorder(14, 12, 2, 0));
+            cabecera.setAlignmentX(LEFT_ALIGNMENT);
+            secciones.add(cabecera);
+
+            JPanel fila = new JPanel(new FlowLayout(FlowLayout.LEFT, SEPARACION, SEPARACION));
+            fila.setOpaque(false);
+            fila.setAlignmentX(LEFT_ALIGNMENT);
+            fila.setPreferredSize(new Dimension(
+                    propios.size() * (TAMANIO_DE_TARJETA.width + SEPARACION) + SEPARACION,
+                    TAMANIO_DE_TARJETA.height + 2 * SEPARACION));
+            propios.forEach(nivel -> fila.add(new Tarjeta(nivel, dibujante, recursos, acento)));
+            secciones.add(fila);
+        }
+        mundo.hijos().forEach(hijo -> agregarElemento(secciones, hijo));
     }
 
     private static final class Tarjeta extends JComponent {
 
-        private final FichaDeNivel ficha;
+        private final NivelDeCampania ficha;
         private final DibujanteDeNivel dibujante;
         private final Font fuenteDeTitulo;
         private final Font fuenteDeDetalle;
         private final Color acento;
 
-        Tarjeta(FichaDeNivel ficha, DibujanteDeNivel dibujante, RepositorioDeFuentes fuentes, boolean tutorial) {
+        Tarjeta(NivelDeCampania ficha, DibujanteDeNivel dibujante, RecursosVisuales recursos, Color acento) {
             this.ficha = ficha;
             this.dibujante = dibujante;
-            this.fuenteDeTitulo = fuentes.fuente("kenvector_future", 14f);
-            this.fuenteDeDetalle = fuentes.fuente("kenvector_future_thin", 11f);
-            this.acento = tutorial ? new Color(60, 200, 255) : new Color(255, 200, 60);
+            this.fuenteDeTitulo = recursos.fuente("kenvector_future", 14f);
+            this.fuenteDeDetalle = recursos.fuente("kenvector_future_thin", 11f);
+            this.acento = acento;
             setPreferredSize(TAMANIO_DE_TARJETA);
         }
 

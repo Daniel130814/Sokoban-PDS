@@ -5,9 +5,9 @@ import sokoban.model.puntaje.ResumenDeNivel;
 /** Resumen de un nivel terminado, con un botón para seguir al próximo. */
 public class PantallaNivelCompletado extends PantallaCentrada {
 
-    public PantallaNivelCompletado(RepositorioDeImagenes imagenes, RepositorioDeFuentes fuentes,
+    public PantallaNivelCompletado(RecursosVisuales recursos,
             Runnable continuar) {
-        super("fondo_espacio", "NIVEL COMPLETADO", 30f, imagenes, fuentes);
+        super("fondo_espacio", "NIVEL COMPLETADO", 30f, recursos);
         agregarBoton("Continuar", continuar);
     }
 

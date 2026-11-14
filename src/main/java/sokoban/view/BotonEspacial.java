@@ -9,13 +9,12 @@ import javax.swing.JButton;
 /** Botón con la imagen de botón del pack y la fuente del tema; no toma el foco del teclado. */
 public class BotonEspacial extends JButton {
 
-    private final RepositorioDeImagenes imagenes;
+    private final RecursosVisuales recursos;
 
-    public BotonEspacial(String texto, int ancho, float tamanioDeFuente, RepositorioDeImagenes imagenes,
-            RepositorioDeFuentes fuentes, Runnable accion) {
+    public BotonEspacial(String texto, int ancho, float tamanioDeFuente, RecursosVisuales recursos, Runnable accion) {
         super(texto);
-        this.imagenes = imagenes;
-        setFont(fuentes.fuente("kenvector_future_thin", tamanioDeFuente));
+        this.recursos = recursos;
+        setFont(recursos.fuente("kenvector_future_thin", tamanioDeFuente));
         setForeground(new Color(20, 40, 90));
         setContentAreaFilled(false);
         setBorderPainted(false);
@@ -28,7 +27,7 @@ public class BotonEspacial extends JButton {
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.drawImage(imagenes.imagen("boton"), 0, 0, getWidth(), getHeight(), null);
+        g2.drawImage(recursos.imagen("boton"), 0, 0, getWidth(), getHeight(), null);
         if (getModel().isPressed()) {
             g2.setColor(new Color(0, 0, 0, 80));
             g2.fillRect(0, 0, getWidth(), getHeight());

@@ -12,6 +12,8 @@ import sokoban.controller.ControladorDeJuego;
 import sokoban.logros.Logros;
 import sokoban.model.ObservadorDeJuego;
 import sokoban.model.Partida;
+import sokoban.model.campania.ElementoDeCampania;
+import sokoban.model.modo.ModoDeJuego;
 import sokoban.tiempo.Cronometro;
 
 /**
@@ -26,6 +28,8 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     static final String FIN = "fin";
     static final String LOGROS = "logros";
     static final String NIVELES = "niveles";
+    static final String MODOS = "modos";
+    static final String FALLIDO = "fallido";
 
     private final Partida partida;
     private final ControladorDeJuego controlador;
@@ -33,24 +37,26 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     private final JPanel contenido = new JPanel(tarjetas);
     private final PanelDeTablero tablero;
     private final PantallaNivelCompletado pantallaCompletado;
+    private final PantallaNivelFallido pantallaFallida;
     private final Cronometro cronometro;
 
-    public VentanaPrincipal(Partida partida, ControladorDeJuego controlador, RepositorioDeImagenes imagenes,
-            RepositorioDeFuentes fuentes, Logros logros, List<FichaDeNivel> fichas, Cronometro cronometro) {
+    public VentanaPrincipal(Partida partida, ControladorDeJuego controlador, RecursosVisuales recursos,
+            Logros logros, ElementoDeCampania campania, Cronometro cronometro,
+            List<ModoDeJuego> modos) {
         super("Sokoban - Los Desinformaticos");
         this.partida = partida;
         this.controlador = controlador;
         this.cronometro = cronometro;
 
-        tablero = new PanelDeTablero(partida, controlador, imagenes);
-        PanelHud hud = new PanelHud(partida, controlador, logros, imagenes, fuentes, () -> mostrar(LOGROS));
+        tablero = new PanelDeTablero(partida, controlador, recursos);
+        PanelHud hud = new PanelHud(partida, controlador, logros, recursos, () -> mostrar(LOGROS));
         partida.agregarObservador(tablero);
         partida.agregarObservador(hud);
         partida.agregarObservador(this);
 
-        PanelEspacial juego = new PanelEspacial(imagenes, "fondo_espacio");
+        PanelEspacial juego = new PanelEspacial(recursos, "fondo_espacio");
         juego.setLayout(new BorderLayout());
-        PanelEspacial centro = new PanelEspacial(imagenes, "fondo_espacio");
+        PanelEspacial centro = new PanelEspacial(recursos, "fondo_espacio");
         centro.setLayout(new GridBagLayout());
         centro.add(tablero);
         juego.add(hud, BorderLayout.NORTH);
@@ -61,14 +67,17 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
                 mostrar(JUEGO);
             }
         };
-        pantallaCompletado = new PantallaNivelCompletado(imagenes, fuentes, controlador::continuar);
-        contenido.add(new PantallaDeMenu(imagenes, fuentes, () -> mostrar(JUEGO), () -> mostrar(NIVELES), cargar,
+        pantallaCompletado = new PantallaNivelCompletado(recursos, controlador::continuar);
+        contenido.add(new PantallaDeMenu(recursos, () -> mostrar(MODOS), () -> mostrar(NIVELES), cargar,
                 this::salir), MENU);
-        contenido.add(new PantallaDeNiveles(imagenes, fuentes, fichas, () -> mostrar(MENU)), NIVELES);
+        contenido.add(new PantallaDeNiveles(recursos, campania, () -> mostrar(MENU)), NIVELES);
         contenido.add(juego, JUEGO);
-        contenido.add(new PantallaDeLogros(imagenes, fuentes, logros, () -> mostrar(JUEGO)), LOGROS);
+        contenido.add(new PantallaDeModos(recursos, modos, controlador::elegirModo, () -> mostrar(MENU)), MODOS);
+        pantallaFallida = new PantallaNivelFallido(recursos, controlador::reiniciarNivel, this::volverAlInicio);
+        contenido.add(pantallaFallida, FALLIDO);
+        contenido.add(new PantallaDeLogros(recursos, logros, () -> mostrar(JUEGO)), LOGROS);
         contenido.add(pantallaCompletado, COMPLETADO);
-        contenido.add(new PantallaFinDeJuego(imagenes, fuentes, this::volverAlInicio, this::salir), FIN);
+        contenido.add(new PantallaFinDeJuego(recursos, this::volverAlInicio, this::salir), FIN);
 
         setContentPane(contenido);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -100,6 +109,14 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
         SwingUtilities.invokeLater(() -> {
             pantallaCompletado.mostrar(partida.resumenDelNivel(), cronometro.comoTexto());
             mostrar(COMPLETADO);
+        });
+    }
+
+    @Override
+    public void nivelFallido() {
+        SwingUtilities.invokeLater(() -> {
+            pantallaFallida.mostrar(partida.modo().nombre(), partida.modo().descripcion());
+            mostrar(FALLIDO);
         });
     }
 

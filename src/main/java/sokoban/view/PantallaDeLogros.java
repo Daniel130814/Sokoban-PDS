@@ -42,16 +42,16 @@ public class PantallaDeLogros extends PanelEspacial {
         }
     };
 
-    public PantallaDeLogros(RepositorioDeImagenes imagenes, RepositorioDeFuentes fuentes, Logros logros,
+    public PantallaDeLogros(RecursosVisuales recursos, Logros logros,
             Runnable volver) {
-        super(imagenes, "fondo_menu");
+        super(recursos, "fondo_menu");
         this.logros = logros;
-        this.fuenteDeNombre = fuentes.fuente("kenvector_future", 14f);
-        this.fuenteDeTexto = fuentes.fuente("kenvector_future_thin", 12f);
+        this.fuenteDeNombre = recursos.fuente("kenvector_future", 14f);
+        this.fuenteDeTexto = recursos.fuente("kenvector_future_thin", 12f);
         setLayout(new BorderLayout());
 
         JLabel titulo = new JLabel("LOGROS", SwingConstants.CENTER);
-        titulo.setFont(fuentes.fuente("kenvector_future", 32f));
+        titulo.setFont(recursos.fuente("kenvector_future", 32f));
         titulo.setForeground(new Color(150, 200, 255));
         titulo.setBorder(BorderFactory.createEmptyBorder(16, 0, 8, 0));
         add(titulo, BorderLayout.NORTH);
@@ -64,7 +64,7 @@ public class PantallaDeLogros extends PanelEspacial {
 
         JPanel pie = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 12));
         pie.setOpaque(false);
-        pie.add(new BotonEspacial("Volver", 200, 14f, imagenes, fuentes, volver));
+        pie.add(new BotonEspacial("Volver", 200, 14f, recursos, volver));
         add(pie, BorderLayout.SOUTH);
     }
 

@@ -13,12 +13,15 @@ Cada decisión sigue el formato: problema, alternativas, decisión, consecuencia
 - DD-007: Cajas frágil y llave; cerrojo y muros con Observer (State descartado)
 - DD-008: Deshacer y reiniciar con Memento
 - DD-009: Vista, HUD y sonido con Observer; controlador sin Swing
-- DD-010: Imágenes compartidas con Flyweight
+- DD-010: Recursos gráficos detrás de una fachada (Facade)
 - DD-011: Puntaje con Strategy
 - DD-012: Guardar y cargar partida con Command (registro de acciones)
 - DD-013: Logros con Observer y Strategy
 - DD-014: Tema visual con FlatLaf y pantallas propias (solo capa de vista)
 - DD-015: Cronómetro por nivel con Observer
+- DD-016: Campaña por mundos con Composite
+- DD-017: Modos de juego con Template Method
+
 ---
 
 ## DD-001: Separación en capas (MVC) y herramienta de build (Maven)
@@ -476,46 +479,50 @@ Un contador de logros o estadísticas es un nuevo `ObservadorDeJuego` registrado
 
 ---
 
-## DD-010: Imágenes compartidas con Flyweight
+## DD-010: Recursos gráficos detrás de una fachada (Facade)
 
-- **Fecha:** 2026-10-23
-- **Estado:** Propuesta
-- **Patrón / principio:** Flyweight (GoF)
+- **Fecha:** 2026-11-13
+- **Estado:** Propuesta (reemplaza la versión del 2026-10-23, que usaba Flyweight)
+- **Patrón / principio:** Facade (GoF); SRP; Low Coupling
 - **Requisito relacionado:** Todos los elementos del tablero representados por imágenes (requisito no confirmado)
 
 ### 1. Problema y contexto
-Un tablero tiene decenas de celdas y se repinta con cada movimiento; muchas celdas usan la misma imagen (por ejemplo, todas las paredes). Leer el PNG por celda y por repintado sería un desperdicio de tiempo y memoria. El estado propio de cada celda (su posición) es chico y distinto, mientras que la imagen es idéntica y puede compartirse.
+La vista necesita imágenes (muchas celdas comparten la misma) y fuentes. Cada pantalla recibía por separado `RepositorioDeImagenes` y `RepositorioDeFuentes`, así que conocía dos clases de infraestructura y los constructores crecían (`VentanaPrincipal` llegó a siete parámetros). Lo que cambia es de dónde y cómo se cargan los recursos; lo estable es que las pantallas piden "una imagen" o "una fuente" por nombre.
+
+La versión anterior de esta decisión presentaba el repositorio de imágenes como Flyweight. Se reemplazó porque el equipo indicó que ese patrón no se vio en la materia: el código es una cache simple (un mapa nombre→imagen) y no hace falta defenderlo con un patrón que no se puede explicar.
 
 ### 2. Alternativas consideradas
 | Alternativa | Ventajas | Desventajas | Por qué se descartó |
 |---|---|---|---|
-| `RepositorioDeImagenes` (Flyweight Factory) con un mapa nombre→imagen | Cada imagen se carga una vez; el estado externo (posición) lo da el panel al dibujar | Un mapa más que mantener | (elegida) |
-| Cargar la imagen en cada repintado | Sin cache, sin estado | Lectura de disco repetida cientos de veces | Costoso e innecesario |
-| Un campo `BufferedImage` por celda del modelo | Sin mapa | Mezcla imágenes con el modelo (rompe MVC) | Viola la separación de capas |
+| `RecursosVisuales` (Facade) delante de los dos repositorios | Una sola dependencia para la vista; las pantallas no saben cómo se carga cada recurso; menos parámetros | Una clase más; delega sin lógica propia | (elegida) |
+| Dejar los dos repositorios y llamarlos "cache" sin patrón | Cero cambios de código | Seguimos pasando dos dependencias a todas las pantallas | Válida, pero no mejora el acoplamiento |
+| Un repositorio único que cargue imágenes y fuentes | Una sola clase | Mezcla dos formatos y dos reglas de respaldo (la fuente tiene una de reserva) | Viola SRP |
 
 ### 3. Decisión
-`RepositorioDeImagenes.imagen(nombre)` carga el PNG la primera vez y devuelve la misma instancia después. `PanelDeTablero` lo consulta al dibujar y pasa la posición como estado extrínseco. `SelectorDeSprites` decide qué nombre corresponde a cada elemento del modelo.
+`RecursosVisuales` expone `imagen(nombre)` y `fuente(nombre, tamaño)` y delega en `RepositorioDeImagenes` y `RepositorioDeFuentes`, que conservan su cache interna. `Main` crea una `RecursosVisuales` y la recibe `VentanaPrincipal`, que la reparte a `PanelHud`, `PanelDeTablero`, `PantallaCentrada`, `BotonEspacial` y las demás pantallas. `SelectorDeSprites` sigue decidiendo qué nombre de imagen corresponde a cada elemento del modelo.
 
 ### 4. Principios que favorece
-- **SRP:** cargar imágenes es una responsabilidad aparte del dibujo.
-- **MVC:** el modelo no conoce ninguna imagen.
+- **Low Coupling:** las pantallas dependen de una clase y no de dos repositorios.
+- **SRP:** cargar y guardar en cache cada tipo de recurso sigue siendo una responsabilidad aparte.
+- **MVC:** el modelo no conoce ninguna imagen ni fuente.
 
 ### 5. Consecuencias y costos
-La cache nunca se vacía (aceptable: hay once imágenes de 48×48). No se midió la mejora real; el beneficio es conceptual y se explica por el problema (releer el mismo archivo muchas veces). Si se agregan temas gráficos, el repositorio podría parametrizarse por tema (Abstract Factory).
+La fachada no agrega lógica: si crece solo para reenviar métodos, sería ruido. Los repositorios siguen siendo públicos y los tests de cache los usan directo, así que la fachada no impide saltársela. La cache nunca se vacía (aceptable: hay pocas imágenes y fuentes) y no se midió la mejora real. Si se agregan temas gráficos, `RecursosVisuales` es el lugar donde elegirlos (Abstract Factory).
 
 ### 6. Dónde está en el código
 | Rol en el patrón | Clase | Estado |
 |---|---|---|
-| Flyweight Factory | `RepositorioDeImagenes` | Implementada |
-| Flyweight (objeto compartido) | `BufferedImage` por nombre | Implementada |
-| Cliente con estado extrínseco | `PanelDeTablero` | Implementada |
+| Facade | `RecursosVisuales` | Implementada |
+| Subsistema (imágenes) | `RepositorioDeImagenes` | Implementada |
+| Subsistema (fuentes) | `RepositorioDeFuentes` | Implementada |
+| Clientes | `VentanaPrincipal`, `PanelHud`, `PanelDeTablero`, `Pantalla*`, `BotonEspacial` | Implementada |
 
 ### 7. Cómo se extiende
-Una imagen nueva es un PNG en `resources/images` y una entrada en `SelectorDeSprites`. Un tema alternativo cambia la carpeta de imágenes sin tocar el dibujo.
+Una imagen nueva es un PNG en `resources/images` y una entrada en `SelectorDeSprites`. Un tipo de recurso nuevo (por ejemplo, íconos vectoriales) se suma como otro subsistema detrás de la misma fachada sin tocar las pantallas.
 
 ### 8. Pregunta de defensa
-**Pregunta:** ¿Por qué Flyweight para las imágenes?
-**Respuesta breve:** Muchas celdas comparten la misma imagen y el tablero se repinta todo el tiempo. Cargamos cada PNG una sola vez y lo compartimos; lo único distinto entre celdas, su posición, lo aporta el panel al dibujar. No lo medimos con números, así que lo defendemos por el problema que evita.
+**Pregunta:** ¿Por qué una fachada si ya tenían los repositorios?
+**Respuesta breve:** Porque las pantallas no tienen por qué saber que hay dos clases distintas ni cómo se carga cada recurso: piden una imagen o una fuente por nombre a un único punto de entrada. Reduce los parámetros y el acoplamiento sin tocar la cache. Reconocemos que la fachada hoy solo delega.
 
 ---
 
@@ -668,7 +675,7 @@ Un logro nuevo ("Cinco niveles sin deshacer") es otra línea en `CatalogoDeLogro
 
 - **Fecha:** 2026-10-28
 - **Estado:** Propuesta
-- **Patrón / principio:** Sin patrón nuevo; Observer (DD-009) y Flyweight (DD-010) reutilizados; SRP; MVC
+- **Patrón / principio:** Sin patrón nuevo; Observer (DD-009) y Facade (DD-010) reutilizados; SRP; MVC
 - **Requisito relacionado:** Interfaz Swing con HUD (requisito no confirmado); la estética no se evalúa
 
 ### 1. Problema y contexto
@@ -690,7 +697,7 @@ La interfaz usaba el aspecto por defecto de Swing y diálogos `JOptionPane`. Se 
 - **OCP:** un observador visual nuevo no toca el modelo.
 
 ### 5. Consecuencias y costos
-Una dependencia nueva (FlatLaf). El destello cubre todo el tablero porque los eventos no llevan posición. El HUD muestra los deshaceres **usados**, no los restantes: el límite de usos consecutivos es privado en `SesionDeNivel` y mostrarlo exigiría un getter en el modelo. Tras el fin del juego solo se puede cargar una partida guardada o salir: una "nueva partida" requeriría un método en `ControladorDeJuego` para no desincronizar el registro de acciones. `RepositorioDeFuentes` repite la idea de cache de DD-010 sin ser un patrón nuevo. Los diálogos de Guardar/Cargar y "caja rota" siguen siendo `JOptionPane`.
+Una dependencia nueva (FlatLaf). El destello cubre todo el tablero porque los eventos no llevan posición. El HUD muestra los deshaceres **usados**, no los restantes: el límite de usos consecutivos es privado en `SesionDeNivel` y mostrarlo exigiría un getter en el modelo. Tras el fin del juego solo se puede cargar una partida guardada o salir: una "nueva partida" requeriría un método en `ControladorDeJuego` para no desincronizar el registro de acciones. `RepositorioDeFuentes` repite la idea de cache de imágenes sin ser un patrón nuevo (queda detrás de la fachada de DD-010). Los diálogos de Guardar/Cargar y "caja rota" siguen siendo `JOptionPane`.
 
 ### 6. Dónde está en el código
 | Rol | Clase | Estado |
@@ -709,6 +716,7 @@ Otro tema es otra carpeta de recursos y otro `LookAndFeel`; una pantalla nueva e
 **Respuesta breve:** El cambio es de presentación y debe quedar en `view`; JavaFX obligaría a reescribir toda la vista y las pruebas sin aportar nada que el TP evalúe. Con FlatLaf el modelo y el controlador no se tocaron.
 
 ---
+
 ## DD-015: Cronómetro por nivel con Observer
 
 - **Fecha:** 2026-11-04
@@ -753,6 +761,102 @@ Un logro "Completá un nivel en menos de 30 s" necesita pasar el tiempo a `Estad
 ### 8. Pregunta de defensa
 **Pregunta:** ¿Por qué un Observer para el cronómetro y no un campo de tiempo en `Nivel`?
 **Respuesta breve:** El modelo ya avisa cuándo se mueve el jugador y cuándo se completa un nivel, así que el cronómetro solo escucha esos eventos. Si el tiempo viviera en `Nivel`, las reglas del juego dependerían del reloj. Reconocemos que repite Observer: lo elegimos por su bajo costo, no por variedad.
+---
+
+## DD-016: Campaña por mundos con Composite
+
+- **Fecha:** 2026-11-13
+- **Estado:** Propuesta
+- **Patrón / principio:** Composite (GoF); OCP; Information Expert. Funcionalidad adicional extra
+- **Requisito relacionado:** Ninguno obligatorio; organiza los niveles del catálogo
+
+### 1. Problema y contexto
+Los niveles eran una lista plana y el catálogo ("tutorial = los primeros cuatro") dependía de un `i < 4` escrito en la vista, con una grilla fija de seis tarjetas que no alcanzaba para los ocho niveles. Se quiere agrupar los niveles en mundos, y poder tratar igual un nivel suelto, un mundo y la campaña entera. Lo que cambia es cómo se agrupan los niveles; lo estable es que `Partida` juega una lista de niveles en orden.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| `ElementoDeCampania` con hoja (`NivelDeCampania`) y compuesto (`Mundo`) | El árbol se recorre y se aplana con la misma interfaz; agregar un mundo no toca el resto | Más clases; con dos niveles de profundidad podría alcanzar una lista | (elegida) |
+| `Map<String, List<Nivel>>` de mundos | Poco código | El orden y el anidado quedan implícitos y la vista decide qué es un mundo | Mueve la estructura a la vista |
+| Un campo "mundo" en cada nivel | Sin clases nuevas | Mezcla datos de presentación con el modelo del nivel | Viola SRP |
+
+### 3. Decisión
+`ElementoDeCampania` define `titulo()`, `detalle()`, `niveles()` y `cantidadDeNiveles()`. `NivelDeCampania` (hoja) envuelve un `Nivel`; `Mundo` (compuesto) guarda hijos y devuelve los niveles de todos ellos en orden. `CampaniaEstandar` arma la campaña: "Tutorial" (niveles 1 a 4) y "Desafíos" (5 a 8). `Main` le pasa `campania.niveles()` a `Partida` y una segunda carga, sin jugar, a `PantallaDeNiveles`, que recorre el árbol y muestra una sección por mundo dentro de un `JScrollPane`.
+
+### 4. Principios que favorece
+- **OCP:** un mundo nuevo es un `Mundo` más en `CampaniaEstandar`; ni `Partida` ni la vista cambian.
+- **Information Expert:** cada elemento sabe cuántos niveles tiene.
+- **SRP:** `Partida` no sabe de mundos.
+
+### 5. Consecuencias y costos
+La vista pregunta `instanceof Mundo` para decidir cómo dibujar (un método en el compuesto sería más puro, pero metería Swing en el modelo). La campaña se carga dos veces (una para jugar, otra para el catálogo) porque los niveles son mutables. Hoy los mundos no tienen puntaje agregado ni progreso: la operación compartida real es listar y contar niveles, lo que hace débil la justificación si no se agregan operaciones.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase/Interfaz | Estado |
+|---|---|---|
+| Component | `ElementoDeCampania` | Implementada |
+| Leaf | `NivelDeCampania` | Implementada |
+| Composite | `Mundo` | Implementada |
+| Armado | `CampaniaEstandar` (Pure Fabrication) | Implementada |
+| Cliente | `PantallaDeNiveles`, `Main` | Implementada |
+
+### 7. Cómo se extiende
+Un tercer mundo es otro `Mundo` en `CampaniaEstandar` con sus archivos `nivelN.txt`. Un puntaje por mundo sería un método `puntaje()` en la interfaz que cada hoja responde y cada mundo suma.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Composite y no una lista de listas?
+**Respuesta breve:** Porque un nivel, un mundo y la campaña se usan igual (listar sus niveles y contarlos) y los mundos pueden anidarse; con listas anidadas la vista tendría que conocer la profundidad. Reconocemos que hoy la operación compartida es chica y que el valor crece si se suman operaciones como el puntaje por mundo.
+
+---
+
+## DD-017: Modos de juego con Template Method
+
+- **Fecha:** 2026-11-13
+- **Estado:** Propuesta
+- **Patrón / principio:** Template Method (GoF); OCP; DIP. Funcionalidad adicional extra
+- **Requisito relacionado:** Ninguno obligatorio
+
+### 1. Problema y contexto
+`Partida.mover()` solo conocía una condición de fin (el nivel resuelto); no existía la derrota. Se quieren modos que cambien cuándo se pierde un nivel (por tiempo o por cantidad de movimientos) y, en uno, el puntaje. Lo estable es el orden en que se decide qué pasó después de un movimiento; lo que cambia es el límite.
+
+### 2. Alternativas consideradas
+| Alternativa | Ventajas | Desventajas | Por qué se descartó |
+|---|---|---|---|
+| `ModoDeJuego` abstracto con un método plantilla `evaluar` y ganchos | El orden (completar antes que perder) queda fijo para todos los modos; los ganchos de puntaje y de etiqueta tienen valor por defecto | Herencia: cada modo es una subclase | (elegida) |
+| Strategy `CondicionDeDerrota` | Composición en vez de herencia; ya hay Strategy en el proyecto | El orden "completar gana" quedaría repetido en `Partida` y no cubre los ganchos de puntaje | Es una alternativa válida; Template Method se eligió por el esqueleto fijo |
+| `if (modo == ...)` dentro de `Partida` | Poco código | Cada modo nuevo modifica `Partida` | Viola OCP |
+
+### 3. Decisión
+`ModoDeJuego.evaluar(Nivel)` es `final`: devuelve `NIVEL_COMPLETADO` si el nivel está resuelto; si no, `NIVEL_FALLIDO` si `limiteAgotado` (paso abstracto); si no, `JUGANDO`. Los ganchos `ajustarPuntaje` y `etiquetaDeMovimientos` tienen implementación por defecto. `ModoClasico` nunca pierde; `ModoMovimientosLimitados` pierde al llegar al máximo (200 por defecto); `ModoContrarreloj` usa el `Cronometro` y pierde pasados 180 segundos, y suma un punto por segundo que sobra. `Partida` recibe el modo (por defecto, clásico), agrega el estado `NIVEL_FALLIDO` y el evento `nivelFallido`; reintentar un nivel fallido lo reinicia y avisa `nivelCambiado`. `ModoContrarreloj` está en el paquete `tiempo` para que `model` no dependa del cronómetro. `GuardadoDePartida` anota una línea `MODO <nombre>`; un guardado sin esa línea se carga con el modo activo.
+
+### 4. Principios que favorece
+- **OCP:** un modo nuevo es una subclase; `Partida` no cambia.
+- **DIP:** `Partida` depende de la abstracción `ModoDeJuego`, no de un reloj ni de un contador.
+- **Information Expert:** cada modo sabe cuándo se agota su límite.
+
+### 5. Consecuencias y costos
+Contrarreloj solo revisa el tiempo al mover: si el jugador se queda quieto no pierde hasta su próxima jugada, y el HUD no muestra el reloj en vivo. Los topes (200 movimientos, 180 segundos) son provisorios: el cálculo con una búsqueda exhaustiva dio 19, 100 y 85 movimientos mínimos para los niveles 5, 6 y 7, y no se halló solución del nivel 8 con el límite de memoria usado, así que no se pudo calibrar con datos completos. Deshacer devuelve movimientos al contador (consistente con `EstadisticasDeNivel`). Al cargar una partida con reloj, se reproduce sin tiempo y no se puede perder por tiempo en la repetición.
+
+### 6. Dónde está en el código
+| Rol en el patrón | Clase | Estado |
+|---|---|---|
+| Clase abstracta con el método plantilla | `ModoDeJuego` | Implementada |
+| Subclase concreta | `ModoClasico` | Implementada |
+| Subclase concreta | `ModoMovimientosLimitados` | Implementada |
+| Subclase concreta | `ModoContrarreloj` | Implementada |
+| Contexto | `Partida` | Implementada |
+| Selección | `PantallaDeModos`, `ControladorDeJuego.elegirModo` | Implementada |
+| Derrota | `PantallaNivelFallido` | Implementada |
+
+### 7. Cómo se extiende
+Un modo "sin deshacer" es una subclase con `limiteAgotado` falso y un deshacer deshabilitado; un modo "una vida" fallaría al romperse una caja. Se agrega a la lista de `Main`.
+
+### 8. Pregunta de defensa
+**Pregunta:** ¿Por qué Template Method y no Strategy para los modos?
+**Respuesta breve:** Porque hay un esqueleto que no puede cambiar (completar el nivel siempre gana a perderlo) y pasos que sí (el límite, el puntaje, el texto del contador). Template Method fija el esqueleto en un lugar. Reconocemos que con solo la condición de derrota alcanzaría un Strategy.
+
+---
+
 ## Decisiones del equipo sobre reglas ambiguas (2026-10-28)
 - **Deslizamiento:** una caja que se desliza sobre terreno resbaladizo se frena al llegar a un destino o a un cerrojo. Ya coincide con el código: `DESTINO` y `CERROJO` usan `MovimientoNormal` (DD-006).
 - **Muros:** si la caja llave sale del cerrojo, sus muros **se vuelven a cerrar**. Reemplaza la regla provisoria de DD-007 ("queda abierto"). **Pendiente de implementar.**
@@ -787,9 +891,11 @@ Un logro "Completá un nivel en menos de 30 s" necesita pasar el tiempo a `Estad
 | DD-007 | Borrador de la entrada, cajas frágil/llave, Observer cerrojo–muro, cargador y tests | completar |
 | DD-008 | Borrador de la entrada, Memento, historial, sesión de nivel y tests | completar |
 | DD-009 | Borrador de la entrada, eventos del modelo, vista Swing, HUD, sonido, controlador y tests | completar |
-| DD-010 | Borrador de la entrada, repositorio de imágenes, generador de assets y tests | completar |
+| DD-010 | Borrador de la entrada (versión Flyweight y reescritura como Facade), repositorio de imágenes, `RecursosVisuales`, generador de assets y tests | completar |
 | DD-011 | Borrador de la entrada, estrategia de puntaje, resumen de nivel y tests | completar |
 | DD-012 | Propuesta de las dos funcionalidades adicionales, borrador de la entrada, acciones, guardado y tests | completar |
 | DD-013 | Borrador de la entrada, logros, criterios y tests | completar |
 | DD-014 | Plan y borrador de la entrada, tema FlatLaf, HUD dibujado, pantallas, destello, repositorio de fuentes y tests de vista | completar |
 | DD-015 | Borrador de la entrada, `Cronometro` y tests | completar |
+| DD-016 | Borrador de la entrada, `Composite` de campaña, pantalla de niveles y tests | completar |
+| DD-017 | Borrador de la entrada, modos de juego, estado fallido, pantallas, guardado con modo y tests | completar |

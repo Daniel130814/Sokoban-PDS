@@ -14,26 +14,23 @@ abstract class PantallaCentrada extends PanelEspacial {
     private static final Dimension TAMANIO_MINIMO = new Dimension(660, 520);
 
     private final JLabel texto = new JLabel("", SwingConstants.CENTER);
-    private final RepositorioDeImagenes imagenes;
-    private final RepositorioDeFuentes fuentes;
+    private final RecursosVisuales recursos;
     private final GridBagConstraints posicion = new GridBagConstraints();
 
-    PantallaCentrada(String fondo, String titulo, float tamanioDeTitulo, RepositorioDeImagenes imagenes,
-            RepositorioDeFuentes fuentes) {
-        super(imagenes, fondo);
-        this.imagenes = imagenes;
-        this.fuentes = fuentes;
+    PantallaCentrada(String fondo, String titulo, float tamanioDeTitulo, RecursosVisuales recursos) {
+        super(recursos, fondo);
+        this.recursos = recursos;
         setLayout(new GridBagLayout());
         setPreferredSize(TAMANIO_MINIMO);
         posicion.gridx = 0;
         posicion.insets = new Insets(8, 0, 8, 0);
 
         JLabel encabezado = new JLabel(titulo, SwingConstants.CENTER);
-        encabezado.setFont(fuentes.fuente("kenvector_future", tamanioDeTitulo));
+        encabezado.setFont(recursos.fuente("kenvector_future", tamanioDeTitulo));
         encabezado.setForeground(new Color(150, 200, 255));
         add(encabezado, posicion);
 
-        texto.setFont(fuentes.fuente("kenvector_future_thin", 16f));
+        texto.setFont(recursos.fuente("kenvector_future_thin", 16f));
         texto.setForeground(Color.WHITE);
         add(texto, posicion);
     }
@@ -44,7 +41,7 @@ abstract class PantallaCentrada extends PanelEspacial {
     }
 
     protected BotonEspacial agregarBoton(String etiqueta, Runnable accion) {
-        BotonEspacial boton = new BotonEspacial(etiqueta, 240, 14f, imagenes, fuentes, accion);
+        BotonEspacial boton = new BotonEspacial(etiqueta, 240, 14f, recursos, accion);
         add(boton, posicion);
         return boton;
     }

@@ -61,6 +61,11 @@ public class DifusorDeEventos implements ObservadorDeJuego {
     }
 
     @Override
+    public void nivelFallido() {
+        difundir(ObservadorDeJuego::nivelFallido);
+    }
+
+    @Override
     public void juegoTerminado() {
         difundir(ObservadorDeJuego::juegoTerminado);
     }

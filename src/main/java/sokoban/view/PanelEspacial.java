@@ -12,8 +12,8 @@ public class PanelEspacial extends JPanel {
 
     private final TexturePaint textura;
 
-    public PanelEspacial(RepositorioDeImagenes imagenes, String fondo) {
-        BufferedImage tile = imagenes.imagen(fondo);
+    public PanelEspacial(RecursosVisuales recursos, String fondo) {
+        BufferedImage tile = recursos.imagen(fondo);
         this.textura = new TexturePaint(tile, new Rectangle(0, 0, tile.getWidth(), tile.getHeight()));
     }
 

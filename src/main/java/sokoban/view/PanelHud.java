@@ -43,7 +43,7 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
     private final Partida partida;
     private final Logros logros;
     private final ControladorDeJuego controlador;
-    private final RepositorioDeImagenes imagenes;
+    private final RecursosVisuales recursos;
     private final Font fuenteDeDatos;
     private final JLabel logrosObtenidos = new JLabel();
     private String nivel = "";
@@ -53,24 +53,24 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
     private String puntaje = "-";
 
     public PanelHud(Partida partida, ControladorDeJuego controlador, Logros logros,
-            RepositorioDeImagenes imagenes, RepositorioDeFuentes fuentes, Runnable verLogros) {
+            RecursosVisuales recursos, Runnable verLogros) {
         super(new BorderLayout());
         this.partida = partida;
         this.controlador = controlador;
         this.logros = logros;
-        this.imagenes = imagenes;
-        this.fuenteDeDatos = fuentes.fuente("kenvector_future_thin", 12f);
+        this.recursos = recursos;
+        this.fuenteDeDatos = recursos.fuente("kenvector_future_thin", 12f);
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(ALTO_DE_DATOS, 10, 8, 10));
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         acciones.setOpaque(false);
-        acciones.add(boton("Deshacer", imagenes, fuentes, controlador::deshacer));
-        acciones.add(boton("Reiniciar", imagenes, fuentes, controlador::reiniciarNivel));
-        acciones.add(boton("Guardar", imagenes, fuentes, this::guardar));
-        acciones.add(boton("Cargar", imagenes, fuentes, this::cargar));
-        acciones.add(boton("Logros", imagenes, fuentes, verLogros));
-        logrosObtenidos.setFont(fuentes.fuente("kenvector_future_thin", 12f));
+        acciones.add(boton("Deshacer", recursos, controlador::deshacer));
+        acciones.add(boton("Reiniciar", recursos, controlador::reiniciarNivel));
+        acciones.add(boton("Guardar", recursos, this::guardar));
+        acciones.add(boton("Cargar", recursos, this::cargar));
+        acciones.add(boton("Logros", recursos, verLogros));
+        logrosObtenidos.setFont(recursos.fuente("kenvector_future_thin", 12f));
         logrosObtenidos.setForeground(Color.WHITE);
         acciones.add(logrosObtenidos);
         add(acciones, BorderLayout.CENTER);
@@ -80,9 +80,8 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
         actualizarLogros("");
     }
 
-    private static BotonEspacial boton(String texto, RepositorioDeImagenes imagenes,
-            RepositorioDeFuentes fuentes, Runnable accion) {
-        return new BotonEspacial(texto, 112, 11f, imagenes, fuentes, accion);
+    private static BotonEspacial boton(String texto, RecursosVisuales recursos, Runnable accion) {
+        return new BotonEspacial(texto, 112, 11f, recursos, accion);
     }
 
     @Override
@@ -155,7 +154,7 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
 
         String[] iconos = {"icono_nivel", "icono_movimientos", "icono_empujes", "icono_deshacer", "icono_puntaje"};
         Nivel actual = partida.nivelActual();
-        String[] textos = {"Nivel " + partida.numeroDeNivel(), "Movim. " + actual.movimientos(),
+        String[] textos = {"Nivel " + partida.numeroDeNivel(), "Movim. " + partida.modo().etiquetaDeMovimientos(actual),
                 "Empujes " + actual.empujes(), "Deshacer " + partida.usosDeDeshacer(), "Puntaje " + puntaje};
         g2.setFont(fuenteDeDatos);
         FontMetrics metricas = g2.getFontMetrics();
@@ -163,7 +162,7 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
         int base = 12 + LADO_DE_ICONO / 2 + (metricas.getAscent() - metricas.getDescent()) / 2;
         for (int i = 0; i < CANTIDAD_DE_DATOS; i++) {
             int x = 12 + i * ancho;
-            dibujarIcono(g2, imagenes.imagen(iconos[i]), x, 12);
+            dibujarIcono(g2, recursos.imagen(iconos[i]), x, 12);
             g2.setColor(Color.WHITE);
             g2.drawString(textos[i], x + LADO_DE_ICONO + 6, base);
         }

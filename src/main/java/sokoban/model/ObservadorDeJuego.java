@@ -27,6 +27,9 @@ public interface ObservadorDeJuego {
     default void nivelCambiado() {
     }
 
+    default void nivelFallido() {
+    }
+
     default void juegoTerminado() {
     }
 }

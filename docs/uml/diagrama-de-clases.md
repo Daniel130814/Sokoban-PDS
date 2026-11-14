@@ -196,9 +196,13 @@ classDiagram
     class Continuar
     class GuardadoDePartida
     class Partida
-    class RepositorioDeImagenes {
-        <<Flyweight Factory>>
+    class RecursosVisuales {
+        <<Facade>>
+        +imagen(String) BufferedImage
+        +fuente(String, float) Font
     }
+    class RepositorioDeImagenes
+    class RepositorioDeFuentes
     class SelectorDeSprites
     class PanelDeTablero
     class ReproductorDeSonido {
@@ -219,7 +223,9 @@ classDiagram
     Accion <|.. Deshacer
     Accion <|.. Reiniciar
     Accion <|.. Continuar
-    PanelDeTablero --> RepositorioDeImagenes
+    PanelDeTablero --> RecursosVisuales
+    RecursosVisuales --> RepositorioDeImagenes
+    RecursosVisuales --> RepositorioDeFuentes
     PanelDeTablero --> SelectorDeSprites
     PanelDeTablero --> ControladorDeJuego
     ReproductorDeSonido <|.. ReproductorJavaSound
@@ -247,4 +253,61 @@ classDiagram
     CargadorDeNivel --> FabricaDeElementos
     CargadorDeNivel ..> Nivel : construye
     FabricaDeElementos ..> Caja : crea
+```
+
+## Campaña: Composite
+
+```mermaid
+classDiagram
+    class ElementoDeCampania {
+        <<interface>>
+        +titulo() String
+        +detalle() String
+        +niveles() List
+        +cantidadDeNiveles() int
+    }
+    class NivelDeCampania {
+        <<Leaf>>
+    }
+    class Mundo {
+        <<Composite>>
+        +agregar(ElementoDeCampania) Mundo
+        +hijos() List
+    }
+    class CampaniaEstandar {
+        +crear(Function) Mundo
+    }
+    class Nivel
+
+    ElementoDeCampania <|.. NivelDeCampania
+    ElementoDeCampania <|.. Mundo
+    Mundo o-- ElementoDeCampania
+    NivelDeCampania --> Nivel
+    CampaniaEstandar ..> Mundo : arma
+```
+
+## Modos de juego: Template Method
+
+```mermaid
+classDiagram
+    class ModoDeJuego {
+        <<abstract>>
+        +evaluar(Nivel) EstadoPartida
+        #limiteAgotado(Nivel) boolean
+        +ajustarPuntaje(int, EstadisticasDeNivel) int
+        +etiquetaDeMovimientos(Nivel) String
+        +nombre() String
+        +descripcion() String
+    }
+    class ModoClasico
+    class ModoMovimientosLimitados
+    class ModoContrarreloj
+    class Cronometro
+    class Partida
+
+    ModoDeJuego <|-- ModoClasico
+    ModoDeJuego <|-- ModoMovimientosLimitados
+    ModoDeJuego <|-- ModoContrarreloj
+    ModoContrarreloj --> Cronometro
+    Partida --> ModoDeJuego
 ```
