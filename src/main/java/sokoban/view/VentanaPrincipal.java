@@ -17,7 +17,8 @@ import sokoban.model.modo.ModoDeJuego;
 import sokoban.tiempo.Cronometro;
 
 /**
- * Ventana con una tarjeta por pantalla (menú, juego, nivel completado y fin). Cambia de tarjeta
+ * Ventana con una tarjeta por pantalla (menú, juego, nivel completado y fin).
+ * Cambia de tarjeta
  * según los eventos del modelo; no decide nada del juego.
  */
 public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
@@ -90,15 +91,17 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     /** Desde el nivel: pregunta antes de salir, porque volver al inicio descarta lo que no se guardó. */
     private void confirmarVolverAlInicio() {
         int respuesta = JOptionPane.showConfirmDialog(this,
-                "¿Volver al inicio?
-Se pierde el progreso que no hayas guardado.",
+                "¿Volver al inicio?\nSe pierde el progreso que no hayas guardado.",
                 "Volver al inicio", JOptionPane.YES_NO_OPTION);
         if (respuesta == JOptionPane.YES_OPTION) {
             volverAlInicio();
         }
     }
 
-    /** Empieza de nuevo desde el primer nivel y muestra el menú (el reinicio avisa nivelCambiado, que va al juego). */
+    /**
+     * Empieza de nuevo desde el primer nivel y muestra el menú (el reinicio avisa
+     * nivelCambiado, que va al juego).
+     */
     private void volverAlInicio() {
         controlador.nuevaPartida();
         mostrar(MENU);

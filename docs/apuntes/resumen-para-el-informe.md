@@ -42,7 +42,7 @@ Proxy y Adapter no se usaron (preferencia provisional de la skill). Singleton se
 | Requisito | Estado | Detalle |
 |---|---|---|
 | Elementos del tablero | Cubierto | Paredes, pisos, destinos, hielo, cerrojos, muros abiertos y cerrados, tres tipos de caja y jugador |
-| Niveles desde `.txt` | Cubierto | 8 niveles, uno por archivo, agrupados en dos mundos; no está comprobado que los niveles 6 a 8 se puedan resolver |
+| Niveles desde `.txt` | Cubierto | 9 niveles, uno por archivo, agrupados en dos mundos; los niveles 5 a 7 y 9 tienen solución comprobada con el motor del juego, el 8 no |
 | Movimiento con flechas, solo empujar, una caja | Cubierto | Probado en `NivelTest` |
 | Deshacer: 15 estados, 5 pasos, 3 usos consecutivos | Cubierto con reglas provisorias | Ver DD-008 |
 | Condición de victoria y avance de nivel | Cubierto | Pantalla final: hoy un diálogo |

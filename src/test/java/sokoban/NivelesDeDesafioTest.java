@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import sokoban.model.CajaFragil;
 import sokoban.model.Partida;
 import sokoban.model.campania.CampaniaEstandar;
 import sokoban.model.carga.CargadorDeNivel;
@@ -12,7 +13,7 @@ import sokoban.model.enums.Direccion;
 import sokoban.model.enums.EstadoPartida;
 
 /**
- * Prueba de aceptación de los niveles 5 a 8 de la campaña. Las soluciones de los niveles 5 a 7 salen de una
+ * Prueba de aceptación de los niveles 5 a 9 de la campaña. Las soluciones de los niveles 5 a 7 salen de una
  * búsqueda exhaustiva (mínimo de movimientos). El nivel 8 no tiene solución conocida: ver DD-017.
  * Letras: D derecha, I izquierda, A arriba, B abajo.
  */
@@ -33,13 +34,29 @@ class NivelesDeDesafioTest {
     }
 
     @Test
-    void laCampaniaCargaLosOchoNivelesComoUnaPartida() {
+    void laCampaniaCargaLosNueveNivelesComoUnaPartida() {
         CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
 
         Partida partida = new Partida(CampaniaEstandar.crear(cargador::cargarDesdeRecurso).niveles());
 
-        assertEquals(8, CampaniaEstandar.crear(cargador::cargarDesdeRecurso).cantidadDeNiveles());
+        assertEquals(9, CampaniaEstandar.crear(cargador::cargarDesdeRecurso).cantidadDeNiveles());
         assertEquals(EstadoPartida.JUGANDO, partida.estado());
+    }
+
+    @Test
+    void elNivel9SeResuelveAbriendoElMuroConLaCajaLlaveYSinRomperLasFragiles() {
+        CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
+        var nivel = CampaniaEstandar.crear(cargador::cargarDesdeRecurso).niveles().get(8);
+        Partida partida = new Partida(java.util.List.of(nivel));
+        long fragilesAntes = nivel.cajas().stream().filter(CajaFragil.class::isInstance).count();
+
+        "DDDDDDBBBBDDDDDDDDDDBDAAIIIBIIIIIIIIIBBDDDDDDBDAAIADDDDDADBBIIIAIIIIIIIIIIIIIBBBDDADDDDAAAAAADB".chars().forEach(letra -> partida.mover(direccion((char) letra)));
+
+        assertEquals(EstadoPartida.NIVEL_COMPLETADO, partida.estado());
+        assertEquals(4, nivel.cajas().size());
+        assertEquals(2, fragilesAntes);
+        assertEquals(java.util.List.of(1, 2), nivel.cajas().stream().filter(CajaFragil.class::isInstance)
+                .map(caja -> ((CajaFragil) caja).resistencia()).sorted().toList());
     }
 
     @Test

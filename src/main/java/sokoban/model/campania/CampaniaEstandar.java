@@ -22,7 +22,8 @@ public final class CampaniaEstandar {
                 .agregar(nivel(cargador, 5, "Nivel 5", "Tres cajas, tres destinos"))
                 .agregar(nivel(cargador, 6, "Nivel 6", "Tres cajas en fila"))
                 .agregar(nivel(cargador, 7, "Nivel 7", "Dos pasillos, tres cajas"))
-                .agregar(nivel(cargador, 8, "Nivel 8", "Ocho cajas: el desafío final"));
+                .agregar(nivel(cargador, 8, "Nivel 8", "Ocho cajas: el desafío final"))
+                .agregar(nivel(cargador, 9, "Nivel 9", "Laboratorio: llave, cerrojo y cajas frágiles"));
         return new Mundo("Campaña", "Todos los niveles").agregar(tutorial).agregar(desafios);
     }
 

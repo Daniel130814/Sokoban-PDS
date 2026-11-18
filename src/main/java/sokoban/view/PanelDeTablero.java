@@ -69,7 +69,7 @@ public class PanelDeTablero extends PanelEspacial implements ObservadorDeJuego {
     }
 
     void dibujar(Graphics2D g) {
-        dibujante.dibujar(g, partida.nivelActual(), orientacion);
+        dibujante.dibujar(g, partida.nivelActual(), orientacion, true);
     }
 
     @Override

@@ -105,6 +105,48 @@ class VistaTest {
     }
 
     @Test
+    void lasCajasFragilesMuestranUnContadorQueCambiaDeColorConCadaEmpuje() {
+        Partida partida = partida("#########", "#@ %   .#", "#########");
+        DibujanteDeNivel dibujante = new DibujanteDeNivel(new RecursosVisuales());
+        int lado = PanelDeTablero.TAMANIO_CELDA;
+        Color verde = new Color(60, 200, 90);
+        Color amarillo = new Color(240, 200, 60);
+
+        BufferedImage sin = dibujar(dibujante, partida, false, 9 * lado, 3 * lado);
+        BufferedImage inicial = dibujar(dibujante, partida, true, 9 * lado, 3 * lado);
+        partida.mover(Direccion.DERECHA);
+        partida.mover(Direccion.DERECHA);
+        BufferedImage conUnEmpuje = dibujar(dibujante, partida, true, 9 * lado, 3 * lado);
+
+        assertFalse(tieneColor(sin, 3, verde));
+        assertTrue(tieneColor(inicial, 3, verde));
+        assertTrue(tieneColor(conUnEmpuje, 4, amarillo));
+        assertFalse(tieneColor(conUnEmpuje, 4, verde));
+    }
+
+    /** Si la fila 1 (la de la caja), en la columna dada, tiene algún píxel exactamente de ese color. */
+    private static boolean tieneColor(BufferedImage imagen, int columna, Color color) {
+        int lado = PanelDeTablero.TAMANIO_CELDA;
+        for (int y = lado; y < 2 * lado; y++) {
+            for (int x = columna * lado; x < (columna + 1) * lado; x++) {
+                if (imagen.getRGB(x, y) == color.getRGB()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static BufferedImage dibujar(DibujanteDeNivel dibujante, Partida partida, boolean contadores,
+            int ancho, int alto) {
+        BufferedImage imagen = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = imagen.createGraphics();
+        dibujante.dibujar(g, partida.nivelActual(), Direccion.ARRIBA, contadores);
+        g.dispose();
+        return imagen;
+    }
+
+    @Test
     void laFachadaEntregaImagenesYFuentesSinExponerLosRepositorios() {
         RecursosVisuales recursos = new RecursosVisuales();
 

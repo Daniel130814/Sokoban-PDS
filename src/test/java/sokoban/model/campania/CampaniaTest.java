@@ -51,10 +51,10 @@ class CampaniaTest {
     }
 
     @Test
-    void laCampaniaEstandarTieneTutorialYDesafiosConOchoNiveles() {
+    void laCampaniaEstandarTieneTutorialYDesafiosConNueveNiveles() {
         Mundo campania = CampaniaEstandar.crear(cargador::cargarDesdeRecurso);
 
-        assertEquals(8, campania.cantidadDeNiveles());
+        assertEquals(9, campania.cantidadDeNiveles());
         assertEquals(List.of("Tutorial", "Desafíos"),
                 campania.hijos().stream().map(ElementoDeCampania::titulo).toList());
         assertEquals(4, campania.hijos().get(0).cantidadDeNiveles());
