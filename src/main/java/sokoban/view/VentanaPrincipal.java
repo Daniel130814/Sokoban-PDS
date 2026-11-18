@@ -166,10 +166,13 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
         }
         SwingUtilities.invokeLater(() -> {
             int respuesta = JOptionPane.showConfirmDialog(this,
-                    "Se rompió una caja y el nivel ya no se puede resolver.\n¿Reiniciar el nivel?",
+                    "Se rompió una caja y el nivel ya no se puede resolver.\n¿Reiniciar el nivel?\n"
+                            + "(Si elegís No, volvés al inicio.)",
                     "Nivel sin solución", JOptionPane.YES_NO_OPTION);
             if (respuesta == JOptionPane.YES_OPTION) {
                 controlador.reiniciarNivel();
+            } else if (respuesta == JOptionPane.NO_OPTION) {
+                volverAlInicio();
             }
         });
     }
