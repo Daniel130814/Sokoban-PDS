@@ -49,7 +49,8 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
         this.cronometro = cronometro;
 
         tablero = new PanelDeTablero(partida, controlador, recursos);
-        PanelHud hud = new PanelHud(partida, controlador, logros, recursos, cronometro, () -> mostrar(LOGROS));
+        PanelHud hud = new PanelHud(partida, controlador, logros, recursos, cronometro, () -> mostrar(LOGROS),
+                this::confirmarVolverAlInicio);
         partida.agregarObservador(tablero);
         partida.agregarObservador(hud);
         partida.agregarObservador(this);
@@ -84,6 +85,17 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
         pack();
         setLocationRelativeTo(null);
         setExtendedState(MAXIMIZED_BOTH);
+    }
+
+    /** Desde el nivel: pregunta antes de salir, porque volver al inicio descarta lo que no se guardó. */
+    private void confirmarVolverAlInicio() {
+        int respuesta = JOptionPane.showConfirmDialog(this,
+                "¿Volver al inicio?
+Se pierde el progreso que no hayas guardado.",
+                "Volver al inicio", JOptionPane.YES_NO_OPTION);
+        if (respuesta == JOptionPane.YES_OPTION) {
+            volverAlInicio();
+        }
     }
 
     /** Empieza de nuevo desde el primer nivel y muestra el menú (el reinicio avisa nivelCambiado, que va al juego). */

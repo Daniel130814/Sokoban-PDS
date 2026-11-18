@@ -700,7 +700,7 @@ La interfaz usaba el aspecto por defecto de Swing y diálogos `JOptionPane`. Se 
 - **OCP:** un observador visual nuevo no toca el modelo.
 
 ### 5. Consecuencias y costos
-Una dependencia nueva (FlatLaf). El destello cubre todo el tablero porque los eventos no llevan posición. El HUD muestra los deshaceres **usados**, no los restantes: el límite de usos consecutivos es privado en `SesionDeNivel` y mostrarlo exigiría un getter en el modelo. Tras el fin del juego solo se puede cargar una partida guardada o salir: una "nueva partida" requeriría un método en `ControladorDeJuego` para no desincronizar el registro de acciones. `RepositorioDeFuentes` repite la idea de cache de imágenes sin ser un patrón nuevo (queda detrás de la fachada de DD-010). Los diálogos de Guardar/Cargar y "caja rota" siguen siendo `JOptionPane`.
+Una dependencia nueva (FlatLaf). El destello cubre todo el tablero porque los eventos no llevan posición. El HUD muestra los deshaceres **usados**, no los restantes: el límite de usos consecutivos es privado en `SesionDeNivel` y mostrarlo exigiría un getter en el modelo. Tras el fin del juego solo se puede cargar una partida guardada o salir: una "nueva partida" requeriría un método en `ControladorDeJuego` para no desincronizar el registro de acciones. `RepositorioDeFuentes` repite la idea de cache de imágenes sin ser un patrón nuevo (queda detrás de la fachada de DD-010). Los diálogos de Guardar/Cargar y "caja rota" siguen siendo `JOptionPane`. Desde el 2026-11-18 el HUD tiene un botón "Inicio" que, tras una confirmación (`JOptionPane`), descarta la partida en curso y vuelve al menú: lo que no se guardó se pierde.
 
 ### 6. Dónde está en el código
 | Rol | Clase | Estado |

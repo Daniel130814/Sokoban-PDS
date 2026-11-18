@@ -32,7 +32,7 @@ import sokoban.tiempo.Cronometro;
 
 /**
  * HUD dibujado a mano sobre un panel semitransparente: nivel, movimientos, empujes, deshacer y último
- * puntaje y reloj con su ícono, más los botones de deshacer, reiniciar, guardar y cargar y los logros.
+ * puntaje y reloj con su ícono, más los botones de deshacer, reiniciar, guardar, cargar, logros e inicio.
  */
 public class PanelHud extends JPanel implements ObservadorDeJuego {
 
@@ -60,7 +60,7 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
     private String puntaje = "-";
 
     public PanelHud(Partida partida, ControladorDeJuego controlador, Logros logros,
-            RecursosVisuales recursos, Cronometro cronometro, Runnable verLogros) {
+            RecursosVisuales recursos, Cronometro cronometro, Runnable verLogros, Runnable alInicio) {
         super(new BorderLayout());
         this.partida = partida;
         this.controlador = controlador;
@@ -78,6 +78,7 @@ public class PanelHud extends JPanel implements ObservadorDeJuego {
         acciones.add(boton("Guardar", recursos, this::guardar));
         acciones.add(boton("Cargar", recursos, this::cargar));
         acciones.add(boton("Logros", recursos, verLogros));
+        acciones.add(boton("Inicio", recursos, alInicio));
         logrosObtenidos.setFont(recursos.fuente("kenvector_future_thin", 12f));
         logrosObtenidos.setForeground(Color.WHITE);
         acciones.add(logrosObtenidos);

@@ -153,6 +153,19 @@ class VistaTest {
     }
 
     @Test
+    void elHudTieneUnBotonInicioQueAvisaALaVentana() {
+        Partida partida = partida("#######", "#@  $.#", "#######");
+        List<String> avisos = new java.util.ArrayList<>();
+        PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
+                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(),
+                new sokoban.tiempo.Cronometro(), () -> { }, () -> avisos.add("inicio"));
+
+        botones(hud).stream().filter(boton -> "Inicio".equals(boton.getText())).findFirst().orElseThrow().doClick();
+
+        assertEquals(List.of("inicio"), avisos);
+    }
+
+    @Test
     void elHudMuestraElRelojSegunElModo() {
         long[] ahora = {0};
         sokoban.tiempo.Cronometro cronometro = new sokoban.tiempo.Cronometro(() -> ahora[0]);
@@ -161,7 +174,7 @@ class VistaTest {
                 new sokoban.tiempo.ModoContrarreloj(cronometro, java.time.Duration.ofSeconds(60)));
         partida.agregarObservador(cronometro);
         PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
-                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), cronometro, () -> { });
+                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), cronometro, () -> { }, () -> { });
 
         assertEquals("Quedan 01:00", hud.textoDeTiempo());
         ahora[0] = 1_000;
@@ -177,7 +190,7 @@ class VistaTest {
     void elHudMuestraLosContadoresDelNivel() {
         Partida partida = partida("#######", "#@  $.#", "#######");
         PanelHud hud = new PanelHud(partida, new ControladorDeJuego(partida),
-                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), new sokoban.tiempo.Cronometro(), () -> { });
+                new Logros(partida, CatalogoDeLogros.estandar()), new RecursosVisuales(), new sokoban.tiempo.Cronometro(), () -> { }, () -> { });
         partida.agregarObservador(hud);
 
         partida.mover(Direccion.DERECHA);
