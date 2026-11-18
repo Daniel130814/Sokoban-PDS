@@ -60,6 +60,19 @@ class NivelesDeDesafioTest {
     }
 
     @Test
+    void elNivel9SePuedeElegirDirectamenteYTerminaElJuego() {
+        CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
+        Partida partida = new Partida(CampaniaEstandar.crear(cargador::cargarDesdeRecurso).niveles());
+        sokoban.controller.ControladorDeJuego controlador = new sokoban.controller.ControladorDeJuego(partida);
+
+        controlador.irANivel(9);
+        "DDDDDDBBBBDDDDDDDDDDBDAAIIIBIIIIIIIIIBBDDDDDDBDAAIADDDDDADBBIIIAIIIIIIIIIIIIIBBBDDADDDDAAAAAADB".chars().forEach(letra -> controlador.mover(direccion((char) letra)));
+        controlador.continuar();
+
+        assertEquals(EstadoPartida.JUEGO_TERMINADO, partida.estado());
+    }
+
+    @Test
     void losNiveles5a7SeResuelvenConSuSolucionMinima() {
         CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
         var niveles = CampaniaEstandar.crear(cargador::cargarDesdeRecurso).niveles();

@@ -148,6 +148,33 @@ class GuardadoYCargaTest {
     }
 
     @Test
+    void elNivelElegidoSeGuardaYAlCargarSeVuelveAlMismoNivel() throws IOException {
+        Partida original = partidaNueva();
+        ControladorDeJuego controlador = new ControladorDeJuego(original);
+        controlador.irANivel(3);
+        controlador.mover(Direccion.DERECHA);
+        Path archivo = carpeta.resolve("nivel3.txt");
+        controlador.guardar(archivo);
+
+        Partida recuperada = partidaNueva();
+        new ControladorDeJuego(recuperada).cargar(archivo);
+
+        assertEquals(List.of("SOKOBAN-GUARDADO 1", "MODO Clásico", "IR_A_NIVEL 3", "MOVER DERECHA"),
+                Files.readAllLines(archivo));
+        assertEquals(3, recuperada.numeroDeNivel());
+        assertEquals(1, recuperada.nivelActual().movimientos());
+    }
+
+    @Test
+    void unNumeroDeNivelInvalidoEnElArchivoSeRechaza() throws IOException {
+        Path archivo = carpeta.resolve("raro.txt");
+        Files.write(archivo, List.of("SOKOBAN-GUARDADO 1", "IR_A_NIVEL tres"));
+
+        assertThrows(GuardadoInvalidoException.class,
+                () -> new ControladorDeJuego(partidaNueva()).cargar(archivo));
+    }
+
+    @Test
     void unModoDesconocidoEnElArchivoSeRechazaSinTocarLaPartida() throws IOException {
         Path archivo = carpeta.resolve("raro.txt");
         Files.write(archivo, List.of("SOKOBAN-GUARDADO 1", "MODO Inventado", "MOVER IZQUIERDA"));

@@ -7,6 +7,7 @@ import java.util.List;
 import sokoban.controller.accion.Accion;
 import sokoban.controller.accion.Continuar;
 import sokoban.controller.accion.Deshacer;
+import sokoban.controller.accion.IrANivel;
 import sokoban.controller.accion.Mover;
 import sokoban.controller.accion.Reiniciar;
 import sokoban.model.Partida;
@@ -58,6 +59,11 @@ public class ControladorDeJuego {
 
     public void continuar() {
         ejecutar(new Continuar());
+    }
+
+    /** Empieza el nivel elegido (desde 1); queda en el registro para que al cargar se llegue al mismo lugar. */
+    public void irANivel(int numero) {
+        ejecutar(new IrANivel(numero));
     }
 
     /** Vuelve al primer nivel con todo como al empezar y borra el registro de acciones. */

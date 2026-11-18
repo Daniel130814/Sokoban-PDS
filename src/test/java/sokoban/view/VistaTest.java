@@ -93,7 +93,7 @@ class VistaTest {
         CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
         var campania = sokoban.model.campania.CampaniaEstandar.crear(cargador::cargarDesdeRecurso);
 
-        PantallaDeNiveles pantalla = new PantallaDeNiveles(new RecursosVisuales(), campania, () -> { });
+        PantallaDeNiveles pantalla = new PantallaDeNiveles(new RecursosVisuales(), campania, numero -> { }, () -> { });
         pantalla.setSize(1200, 800);
         pantalla.doLayout();
         BufferedImage imagen = new BufferedImage(1200, 800, BufferedImage.TYPE_INT_ARGB);
@@ -144,6 +144,47 @@ class VistaTest {
         dibujante.dibujar(g, partida.nivelActual(), Direccion.ARRIBA, contadores);
         g.dispose();
         return imagen;
+    }
+
+    @Test
+    void alHacerClicEnUnaTarjetaDelCatalogoSeEligeESeNivelConSuNumero() {
+        CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
+        var campania = sokoban.model.campania.CampaniaEstandar.crear(cargador::cargarDesdeRecurso);
+        List<Integer> elegidos = new java.util.ArrayList<>();
+        PantallaDeNiveles pantalla = new PantallaDeNiveles(new RecursosVisuales(), campania, elegidos::add, () -> { });
+
+        List<java.awt.Component> tarjetas = tarjetas(pantalla);
+        for (int indice : new int[] {0, 8}) {
+            java.awt.Component tarjeta = tarjetas.get(indice);
+            tarjeta.dispatchEvent(new java.awt.event.MouseEvent(tarjeta, java.awt.event.MouseEvent.MOUSE_CLICKED,
+                    0, 0, 5, 5, 1, false));
+        }
+
+        assertEquals(9, tarjetas.size());
+        assertEquals(List.of(1, 9), elegidos);
+    }
+
+    private static List<java.awt.Component> tarjetas(java.awt.Container contenedor) {
+        List<java.awt.Component> encontradas = new java.util.ArrayList<>();
+        for (java.awt.Component hijo : contenedor.getComponents()) {
+            if ("Tarjeta".equals(hijo.getClass().getSimpleName())) {
+                encontradas.add(hijo);
+            } else if (hijo instanceof java.awt.Container interior) {
+                encontradas.addAll(tarjetas(interior));
+            }
+        }
+        return encontradas;
+    }
+
+    @Test
+    void laPantallaDeModosAvisaDesdeQueNivelSeEmpieza() {
+        PantallaDeModos pantalla = new PantallaDeModos(new RecursosVisuales(),
+                List.of(new sokoban.model.modo.ModoClasico()), modo -> { }, () -> { });
+
+        pantalla.mostrarDestino("Vas a empezar en el nivel 9");
+        pantalla.mostrarDestino(null);
+
+        assertEquals(2, botones(pantalla).size());
     }
 
     @Test

@@ -83,6 +83,22 @@ public class Partida {
         return sesion.nivel();
     }
 
+    public int cantidadDeNiveles() {
+        return niveles.size();
+    }
+
+    /** Empieza el nivel pedido (desde 1) como al principio, en estado JUGANDO, y avisa que el nivel cambió. */
+    public void irANivel(int numero) {
+        if (numero < 1 || numero > niveles.size()) {
+            throw new IllegalArgumentException("No existe el nivel " + numero);
+        }
+        indiceActual = numero - 1;
+        niveles.get(indiceActual).restaurar(estadosIniciales.get(indiceActual));
+        sesion = new SesionDeNivel(niveles.get(indiceActual));
+        estado = EstadoPartida.JUGANDO;
+        observadores.nivelCambiado();
+    }
+
     public int numeroDeNivel() {
         return indiceActual + 1;
     }

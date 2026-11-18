@@ -194,6 +194,7 @@ classDiagram
     class Deshacer
     class Reiniciar
     class Continuar
+    class IrANivel
     class GuardadoDePartida
     class Partida
     class RecursosVisuales {
@@ -223,6 +224,7 @@ classDiagram
     Accion <|.. Deshacer
     Accion <|.. Reiniciar
     Accion <|.. Continuar
+    Accion <|.. IrANivel
     PanelDeTablero --> RecursosVisuales
     RecursosVisuales --> RepositorioDeImagenes
     RecursosVisuales --> RepositorioDeFuentes

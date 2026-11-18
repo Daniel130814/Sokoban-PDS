@@ -76,6 +76,31 @@ class PartidaTest {
     }
 
     @Test
+    void irANivelEmpiezaEseNivelDesdeCeroSinImportarDondeSeEstaba() {
+        Partida partida = new Partida(List.of(
+                new CargadorDeNivel(new FabricaDeElementos()).cargar(List.of("#######", "#@ $ .#", "#######")),
+                new CargadorDeNivel(new FabricaDeElementos()).cargar(List.of("#######", "#@ $ .#", "#######"))));
+        java.util.List<String> eventos = new java.util.ArrayList<>();
+        partida.agregarObservador(new ObservadorDeJuego() {
+            @Override
+            public void nivelCambiado() {
+                eventos.add("cambiado");
+            }
+        });
+        partida.mover(Direccion.DERECHA);
+
+        partida.irANivel(2);
+
+        assertEquals(2, partida.numeroDeNivel());
+        assertEquals(EstadoPartida.JUGANDO, partida.estado());
+        assertEquals(0, partida.nivelActual().movimientos());
+        assertEquals(java.util.List.of("cambiado"), eventos);
+        partida.irANivel(1);
+        assertEquals(0, partida.nivelActual().movimientos());
+        assertThrows(IllegalArgumentException.class, () -> partida.irANivel(3));
+    }
+
+    @Test
     void sePuedeDeshacerYReiniciarMientrasSeJuega() {
         Partida partida = new Partida(List.of(CARGADOR.cargar(List.of("#######", "#@  $.#", "#######"))));
         Posicion inicio = partida.nivelActual().jugador().posicion();

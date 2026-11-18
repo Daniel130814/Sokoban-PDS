@@ -12,6 +12,7 @@ import java.util.function.Function;
 import sokoban.controller.accion.Accion;
 import sokoban.controller.accion.Continuar;
 import sokoban.controller.accion.Deshacer;
+import sokoban.controller.accion.IrANivel;
 import sokoban.controller.accion.Mover;
 import sokoban.controller.accion.Reiniciar;
 import sokoban.exception.GuardadoInvalidoException;
@@ -30,7 +31,8 @@ public class GuardadoDePartida {
             "MOVER", argumento -> new Mover(Direccion.valueOf(argumento)),
             "DESHACER", argumento -> new Deshacer(),
             "REINICIAR", argumento -> new Reiniciar(),
-            "CONTINUAR", argumento -> new Continuar());
+            "CONTINUAR", argumento -> new Continuar(),
+            "IR_A_NIVEL", argumento -> new IrANivel(Integer.parseInt(argumento.trim())));
 
     public void guardar(List<Accion> acciones, Path ruta) throws IOException {
         guardar(null, acciones, ruta);

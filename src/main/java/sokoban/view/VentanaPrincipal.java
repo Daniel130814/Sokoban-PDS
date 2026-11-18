@@ -40,6 +40,8 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
     private final PantallaNivelCompletado pantallaCompletado;
     private final PantallaNivelFallido pantallaFallida;
     private final Cronometro cronometro;
+    private final PantallaDeModos pantallaDeModos;
+    private int nivelElegido = 1;
 
     public VentanaPrincipal(Partida partida, ControladorDeJuego controlador, RecursosVisuales recursos,
             Logros logros, ElementoDeCampania campania, Cronometro cronometro,
@@ -70,11 +72,12 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
             }
         };
         pantallaCompletado = new PantallaNivelCompletado(recursos, controlador::continuar);
-        contenido.add(new PantallaDeMenu(recursos, () -> mostrar(MODOS), () -> mostrar(NIVELES), cargar,
+        contenido.add(new PantallaDeMenu(recursos, this::elegirModoDesdeElPrincipio, () -> mostrar(NIVELES), cargar,
                 this::salir), MENU);
-        contenido.add(new PantallaDeNiveles(recursos, campania, () -> mostrar(MENU)), NIVELES);
+        contenido.add(new PantallaDeNiveles(recursos, campania, this::elegirModoParaNivel, () -> mostrar(MENU)), NIVELES);
         contenido.add(juego, JUEGO);
-        contenido.add(new PantallaDeModos(recursos, modos, controlador::elegirModo, () -> mostrar(MENU)), MODOS);
+        pantallaDeModos = new PantallaDeModos(recursos, modos, this::empezarConModo, () -> mostrar(MENU));
+        contenido.add(pantallaDeModos, MODOS);
         pantallaFallida = new PantallaNivelFallido(recursos, controlador::reiniciarNivel, this::volverAlInicio);
         contenido.add(pantallaFallida, FALLIDO);
         contenido.add(new PantallaDeLogros(recursos, logros, () -> mostrar(JUEGO)), LOGROS);
@@ -86,6 +89,27 @@ public class VentanaPrincipal extends JFrame implements ObservadorDeJuego {
         pack();
         setLocationRelativeTo(null);
         setExtendedState(MAXIMIZED_BOTH);
+    }
+
+    /** "Jugar" del menú: empieza por el primer nivel, así que solo falta elegir el modo. */
+    private void elegirModoDesdeElPrincipio() {
+        nivelElegido = 1;
+        pantallaDeModos.mostrarDestino(null);
+        mostrar(MODOS);
+    }
+
+    /** Clic en un nivel del catálogo: se recuerda cuál fue y se pasa a elegir el modo. */
+    private void elegirModoParaNivel(int numero) {
+        nivelElegido = numero;
+        pantallaDeModos.mostrarDestino("Vas a empezar en el nivel " + numero);
+        mostrar(MODOS);
+    }
+
+    private void empezarConModo(ModoDeJuego modo) {
+        controlador.elegirModo(modo);
+        if (nivelElegido > 1) {
+            controlador.irANivel(nivelElegido);
+        }
     }
 
     /** Desde el nivel: pregunta antes de salir, porque volver al inicio descarta lo que no se guardó. */

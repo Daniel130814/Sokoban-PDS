@@ -9,8 +9,12 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Cursor;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
+import java.util.function.IntConsumer;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -36,11 +40,17 @@ public class PantallaDeNiveles extends PanelEspacial {
 
     private final RecursosVisuales recursos;
     private final DibujanteDeNivel dibujante;
+    private final ElementoDeCampania campania;
+    private final IntConsumer alElegirNivel;
     private int mundosDibujados;
 
-    public PantallaDeNiveles(RecursosVisuales recursos, ElementoDeCampania campania, Runnable volver) {
+    /** {@code alElegirNivel} recibe el número del nivel (desde 1) cuando el jugador hace clic en su tarjeta. */
+    public PantallaDeNiveles(RecursosVisuales recursos, ElementoDeCampania campania, IntConsumer alElegirNivel,
+            Runnable volver) {
         super(recursos, "fondo_menu");
         this.recursos = recursos;
+        this.campania = campania;
+        this.alElegirNivel = alElegirNivel;
         this.dibujante = new DibujanteDeNivel(recursos);
         setLayout(new BorderLayout());
 
@@ -48,7 +58,7 @@ public class PantallaDeNiveles extends PanelEspacial {
         titulo.setFont(recursos.fuente("kenvector_future", 32f));
         titulo.setForeground(new Color(150, 200, 255));
         titulo.setBorder(BorderFactory.createEmptyBorder(16, 0, 4, 0));
-        JLabel nota = new JLabel(campania.cantidadDeNiveles() + " niveles en la campaña", SwingConstants.CENTER);
+        JLabel nota = new JLabel("Elegí un nivel para jugarlo (" + campania.cantidadDeNiveles() + " en total)", SwingConstants.CENTER);
         nota.setFont(recursos.fuente("kenvector_future_thin", 13f));
         nota.setForeground(Color.WHITE);
         JPanel encabezado = new JPanel(new GridLayout(2, 1));
@@ -99,7 +109,10 @@ public class PantallaDeNiveles extends PanelEspacial {
             fila.setPreferredSize(new Dimension(
                     propios.size() * (TAMANIO_DE_TARJETA.width + SEPARACION) + SEPARACION,
                     TAMANIO_DE_TARJETA.height + 2 * SEPARACION));
-            propios.forEach(nivel -> fila.add(new Tarjeta(nivel, dibujante, recursos, acento)));
+            propios.forEach(nivel -> {
+                int numero = campania.niveles().indexOf(nivel.nivel()) + 1;
+                fila.add(new Tarjeta(nivel, dibujante, recursos, acento, () -> alElegirNivel.accept(numero)));
+            });
             secciones.add(fila);
         }
         mundo.hijos().forEach(hijo -> agregarElemento(secciones, hijo));
@@ -112,14 +125,36 @@ public class PantallaDeNiveles extends PanelEspacial {
         private final Font fuenteDeTitulo;
         private final Font fuenteDeDetalle;
         private final Color acento;
+        private boolean resaltada;
 
-        Tarjeta(NivelDeCampania ficha, DibujanteDeNivel dibujante, RecursosVisuales recursos, Color acento) {
+        Tarjeta(NivelDeCampania ficha, DibujanteDeNivel dibujante, RecursosVisuales recursos, Color acento,
+                Runnable alElegir) {
             this.ficha = ficha;
             this.dibujante = dibujante;
             this.fuenteDeTitulo = recursos.fuente("kenvector_future", 14f);
             this.fuenteDeDetalle = recursos.fuente("kenvector_future_thin", 11f);
             this.acento = acento;
             setPreferredSize(TAMANIO_DE_TARJETA);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setToolTipText("Jugar " + ficha.titulo());
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent evento) {
+                    alElegir.run();
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent evento) {
+                    resaltada = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent evento) {
+                    resaltada = false;
+                    repaint();
+                }
+            });
         }
 
         @Override
@@ -127,10 +162,12 @@ public class PantallaDeNiveles extends PanelEspacial {
             Graphics2D g = (Graphics2D) graficos.create();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g.setColor(new Color(8, 10, 28, 200));
+            g.setColor(resaltada ? new Color(30, 40, 90, 225) : new Color(8, 10, 28, 200));
             g.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
             g.setColor(acento);
-            g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+            g.setStroke(new java.awt.BasicStroke(resaltada ? 3f : 1f));
+            g.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 14, 14);
+            g.setStroke(new java.awt.BasicStroke(1f));
 
             dibujarMiniatura(g.create(10, 10, ANCHO_DE_MINIATURA, ALTO_DE_MINIATURA), ficha.nivel());
 

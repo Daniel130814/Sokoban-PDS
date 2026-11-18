@@ -54,6 +54,21 @@ class AccionTest {
     }
 
     @Test
+    void irANivelEmpiezaElNivelPedidoYSoloValeDentroDeLaCantidadDeNiveles() {
+        CargadorDeNivel cargador = new CargadorDeNivel(new FabricaDeElementos());
+        Partida dosNiveles = new Partida(List.of(
+                cargador.cargar(List.of("#####", "#@$.#", "#####")),
+                cargador.cargar(List.of("#####", "#@$.#", "#####"))));
+
+        assertTrue(new IrANivel(2).ejecutar(dosNiveles));
+        assertEquals(2, dosNiveles.numeroDeNivel());
+        assertFalse(new IrANivel(3).ejecutar(dosNiveles));
+        assertFalse(new IrANivel(0).ejecutar(dosNiveles));
+        assertEquals(2, dosNiveles.numeroDeNivel());
+        assertEquals("IR_A_NIVEL 2", new IrANivel(2).comoTexto());
+    }
+
+    @Test
     void cadaAccionSeDescribeComoTexto() {
         assertEquals("MOVER ARRIBA", new Mover(Direccion.ARRIBA).comoTexto());
         assertEquals("DESHACER", new Deshacer().comoTexto());

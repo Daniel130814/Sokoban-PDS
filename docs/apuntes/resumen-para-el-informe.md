@@ -21,7 +21,7 @@ enunciado vigente.
 | DD-009 | **Observer**, MVC, GRASP Controller | Vista, HUD y sonido reaccionan sin acoplarse al modelo | `ObservadorDeJuego`, `DifusorDeEventos`, `PanelDeTablero`, `PanelHud`, `SonidosDelJuego`, `ControladorDeJuego` | `EventosDeJuegoTest`, `SonidosDelJuegoTest`, `ControladorDeJuegoTest` |
 | DD-010 | **Facade** | Una sola entrada a imágenes y fuentes para la vista | `RecursosVisuales`, `RepositorioDeImagenes`, `RepositorioDeFuentes` | `VistaTest` |
 | DD-011 | **Strategy** | Criterio de puntaje intercambiable | `EstrategiaDePuntaje`, `PuntajePorEficiencia`, `Partida` | `PuntajeTest` |
-| DD-012 | **Command** (funcionalidad adicional 1) | Guardar, cargar y reproducir la partida | `Accion`, `Mover`, `Deshacer`, `Reiniciar`, `Continuar`, `GuardadoDePartida` | `GuardadoYCargaTest`, `AccionTest` |
+| DD-012 | **Command** (funcionalidad adicional 1) | Guardar, cargar y reproducir la partida | `Accion`, `Mover`, `Deshacer`, `Reiniciar`, `Continuar`, `IrANivel`, `GuardadoDePartida` | `GuardadoYCargaTest`, `AccionTest` |
 | DD-013 | **Observer + Strategy** (funcionalidad adicional 2) | Logros sin tocar el modelo | `Logros`, `CriterioDeLogro`, `Logro`, `CatalogoDeLogros` | `LogrosTest` |
 | DD-015 | **Observer** | Medir el tiempo por nivel sin tocar el modelo | `Cronometro` | `CronometroTest` |
 | DD-016 | **Composite** | Agrupar niveles en mundos y tratarlos igual | `ElementoDeCampania`, `NivelDeCampania`, `Mundo`, `CampaniaEstandar` | `CampaniaTest` |

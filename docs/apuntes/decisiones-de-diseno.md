@@ -597,7 +597,7 @@ Se quiere guardar una partida en un archivo y retomarla después. Hay que decidi
 | Lista de enums y un `switch` para reproducirla | Menos clases | El `switch` crece con cada acción nueva | Menos extensible |
 
 ### 3. Decisión
-`Accion` (Command) tiene `ejecutar(Partida)`, que dice si tuvo efecto, y `comoTexto()`. Hay cuatro acciones: `Mover`, `Deshacer`, `Reiniciar` y `Continuar`. `ControladorDeJuego` es el invocador: crea la acción, la ejecuta y registra solo las que tuvieron efecto, de modo que una tecla contra una pared no ensucia el archivo. `GuardadoDePartida` escribe y lee el registro (un encabezado y una acción por línea). Para cargar, `Partida.reconstruir` deja los niveles como al empezar usando sus estados iniciales (el Memento, reutilizado), reproduce las acciones sin avisar a los observadores y avisa una sola vez que cambió el nivel. Sin ese silencio, cada paso reproducido abriría el diálogo de nivel completado o sonaría.
+`Accion` (Command) tiene `ejecutar(Partida)`, que dice si tuvo efecto, y `comoTexto()`. Hay cinco acciones: `Mover`, `Deshacer`, `Reiniciar`, `Continuar` e `IrANivel` (agregada el 2026-11-18 para el selector de niveles del catálogo: se guarda como `IR_A_NIVEL n`, así que al cargar se reproduce hasta el mismo nivel; es una sola línea nueva y el resto del formato no cambia). `ControladorDeJuego` es el invocador: crea la acción, la ejecuta y registra solo las que tuvieron efecto, de modo que una tecla contra una pared no ensucia el archivo. `GuardadoDePartida` escribe y lee el registro (un encabezado y una acción por línea). Para cargar, `Partida.reconstruir` deja los niveles como al empezar usando sus estados iniciales (el Memento, reutilizado), reproduce las acciones sin avisar a los observadores y avisa una sola vez que cambió el nivel. Sin ese silencio, cada paso reproducido abriría el diálogo de nivel completado o sonaría.
 
 La lectura y la validación del archivo se hacen antes de tocar la partida: un archivo inválido lanza `GuardadoInvalidoException` y la partida en curso queda como estaba (hay un test).
 
@@ -613,7 +613,7 @@ Se usa Command solo para registrar y reproducir: ninguna acción implementa `des
 | Rol en el patrón | Clase/Interfaz | Estado |
 |---|---|---|
 | Command | `Accion` | Implementada |
-| Comandos concretos | `Mover`, `Deshacer`, `Reiniciar`, `Continuar` | Implementada |
+| Comandos concretos | `Mover`, `Deshacer`, `Reiniciar`, `Continuar`, `IrANivel` | Implementada |
 | Invoker / registro | `ControladorDeJuego` | Implementada |
 | Receiver | `Partida` | Implementada |
 | Persistencia del registro | `GuardadoDePartida` | Implementada |
@@ -784,7 +784,7 @@ Los niveles eran una lista plana y el catálogo ("tutorial = los primeros cuatro
 | Un campo "mundo" en cada nivel | Sin clases nuevas | Mezcla datos de presentación con el modelo del nivel | Viola SRP |
 
 ### 3. Decisión
-`ElementoDeCampania` define `titulo()`, `detalle()`, `niveles()` y `cantidadDeNiveles()`. `NivelDeCampania` (hoja) envuelve un `Nivel`; `Mundo` (compuesto) guarda hijos y devuelve los niveles de todos ellos en orden. `CampaniaEstandar` arma la campaña: "Tutorial" (niveles 1 a 4) y "Desafíos" (5 a 9; el 9 es un laboratorio grande con caja llave, cerrojo, muro y dos cajas frágiles). `Main` le pasa `campania.niveles()` a `Partida` y una segunda carga, sin jugar, a `PantallaDeNiveles`, que recorre el árbol y muestra una sección por mundo dentro de un `JScrollPane`.
+`ElementoDeCampania` define `titulo()`, `detalle()`, `niveles()` y `cantidadDeNiveles()`. `NivelDeCampania` (hoja) envuelve un `Nivel`; `Mundo` (compuesto) guarda hijos y devuelve los niveles de todos ellos en orden. Desde el catálogo se puede hacer clic en un nivel para jugarlo directamente (pasa por la elección de modo y registra `IrANivel`). `CampaniaEstandar` arma la campaña: "Tutorial" (niveles 1 a 4) y "Desafíos" (5 a 9; el 9 es un laboratorio grande con caja llave, cerrojo, muro y dos cajas frágiles). `Main` le pasa `campania.niveles()` a `Partida` y una segunda carga, sin jugar, a `PantallaDeNiveles`, que recorre el árbol y muestra una sección por mundo dentro de un `JScrollPane`.
 
 ### 4. Principios que favorece
 - **OCP:** un mundo nuevo es un `Mundo` más en `CampaniaEstandar`; ni `Partida` ni la vista cambian.
